@@ -5,3 +5,19 @@ version = 3
 [[package]]
 name = "huntsman"
 version = "0.1.0"
+dependencies = [
+ "linux",
+]
+
+[[package]]
+name = "linux"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-linux#af39e7322cfeae6f6a12fd100050bab37267e1c2"
+dependencies = [
+ "raw",
+]
+
+[[package]]
+name = "raw"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-linux#af39e7322cfeae6f6a12fd100050bab37267e1c2"
