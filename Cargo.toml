@@ -1,0 +1,9 @@
+[package]
+name = "huntsman"
+version = "0.1.0"
+description = "A library for running servers"
+authors = ["Lance Hart <me@lancehart>"]
+edition = "2021"
+repository = "https://github.com/shipsimfan/huntsman.git"
+license = "GPL-3.0-or-later"
+publish = false
