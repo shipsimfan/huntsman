@@ -2,6 +2,7 @@ use crate::{try_linux, LinuxResult};
 use linux::{
     netinet::r#in::sockaddr_in,
     sys::socket::{bind, listen, socket, AF_INET, SOCK_STREAM},
+    unistd::close,
 };
 use std::ffi::c_int;
 
@@ -26,5 +27,11 @@ impl ListenSocket {
         try_linux!(listen(socket, 16))?;
 
         Ok(ListenSocket(socket))
+    }
+}
+
+impl Drop for ListenSocket {
+    fn drop(&mut self) {
+        unsafe { close(self.0) };
     }
 }
