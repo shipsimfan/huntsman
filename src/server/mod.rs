@@ -1,22 +1,16 @@
+use crate::LinuxResult;
 use listen_socket::ListenSocket;
 
 mod listen_socket;
 
 /// A huntsman server
-pub struct Server {
+pub(crate) struct Server {
     listen_socket: ListenSocket,
 }
 
 impl Server {
-    /// Creates an new [`Server`] and runs it
-    pub fn run(port: u16) -> linux::Result<!> {
-        let mut server = Server::new(port)?;
-
-        loop {}
-    }
-
     /// Creates a new [`Server`]
-    fn new(port: u16) -> linux::Result<Self> {
+    pub(crate) fn new(port: u16) -> LinuxResult<Self> {
         let listen_socket = ListenSocket::new(port)?;
 
         Ok(Server { listen_socket })
