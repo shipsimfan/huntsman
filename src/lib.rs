@@ -1,14 +1,7 @@
 //! A library for making servers
 
 #![deny(missing_docs)]
-#![feature(never_type)]
-
-mod error;
-mod run;
-mod server;
-
-pub use error::{LinuxError, LinuxResult};
-pub use run::run;
-
-pub(crate) use error::try_linux;
-pub(crate) use server::Server;
+#![deny(rustdoc::private_intra_doc_links)]
+#![deny(rustdoc::unescaped_backticks)]
+#![deny(rustdoc::redundant_explicit_links)]
+#![warn(rustdoc::broken_intra_doc_links)]
