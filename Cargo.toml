@@ -9,4 +9,4 @@ license = "GPL-3.0-or-later"
 publish = false
 
 [dependencies]
-linux.git = "https://github.com/shipsimfan/lib-linux"
+lasync.git = "https://github.com/shipsimfan/lib-lasync"
