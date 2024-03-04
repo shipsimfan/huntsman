@@ -1,5 +1,11 @@
-use crate::{Options, Result};
+use crate::Result;
 use std::{cell::RefCell, num::NonZeroUsize, rc::Rc};
+use workers::Workers;
+
+mod options;
+mod workers;
+
+pub use options::Options;
 
 const MAX_EVENTS: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(1024) };
 
@@ -25,6 +31,12 @@ pub(crate) async fn async_run(
     future_queue: lasync::executor::FutureQueue,
     options: Options,
 ) -> Result<()> {
+    let workers = Workers::new(
+        options.workers(),
+        options.max_worker_connections(),
+        future_queue,
+    );
+
     let listen_socket = lasync::futures::net::TCPListener::bind(options.socket_address())?;
 
     todo!("run()");
