@@ -37,7 +37,12 @@ pub(crate) async fn async_run(
         future_queue,
     );
 
-    let listen_socket = lasync::futures::net::TCPListener::bind(options.socket_address())?;
+    let mut listen_socket = lasync::futures::net::TCPListener::bind(options.socket_address())?;
 
-    todo!("run()");
+    loop {
+        match listen_socket.accept()?.await {
+            Ok((_, address)) => println!("Client connected from {}", address),
+            Err(error) => eprintln!("Error while accepting client: {}", error),
+        }
+    }
 }
