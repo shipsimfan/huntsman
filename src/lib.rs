@@ -12,5 +12,5 @@ mod protocol;
 mod runner;
 
 pub use error::{Error, Result};
-pub use protocol::{Protocol, Transport, TransportClient};
+pub use protocol::{Protocol, Request, Response, Transport, TransportClient};
 pub use runner::{run, Options};

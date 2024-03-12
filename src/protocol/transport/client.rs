@@ -1,11 +1,7 @@
-use std::{
-    error::Error,
-    io::{Read, Write},
-    net::TcpStream,
-};
+use std::{error::Error, net::TcpStream};
 
 /// A client connection
-pub trait TransportClient: 'static + Sized + Read + Write + Send {
+pub trait TransportClient: 'static + Sized + Send {
     /// The error type this client can produce
     type Error: 'static + Error;
 }
