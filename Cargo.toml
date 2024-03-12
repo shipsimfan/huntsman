@@ -7,6 +7,3 @@ edition = "2021"
 repository = "https://github.com/shipsimfan/huntsman.git"
 license = "GPL-3.0-or-later"
 publish = false
-
-[dependencies]
-lasync.git = "https://github.com/shipsimfan/lib-lasync"
