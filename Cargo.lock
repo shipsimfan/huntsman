@@ -5,3 +5,18 @@ version = 3
 [[package]]
 name = "huntsman"
 version = "0.1.0"
+
+[[package]]
+name = "huntsman-http"
+version = "0.1.0"
+dependencies = [
+ "huntsman",
+]
+
+[[package]]
+name = "huntsman-static-http"
+version = "0.1.0"
+dependencies = [
+ "huntsman",
+ "huntsman-http",
+]

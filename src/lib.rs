@@ -8,18 +8,9 @@
 #![feature(never_type)]
 
 mod error;
+mod protocol;
 mod runner;
 
 pub use error::{Error, Result};
+pub use protocol::{Protocol, Transport, TransportClient};
 pub use runner::{run, Options};
-
-#[test]
-fn test() {
-    match run(Options::default()) {
-        Ok(_) => {}
-        Err(error) => {
-            eprintln!("Error: {}", error);
-            Result::<()>::Err(error).unwrap();
-        }
-    }
-}

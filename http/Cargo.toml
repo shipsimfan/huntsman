@@ -1,0 +1,13 @@
+[package]
+name = "huntsman-http"
+description = "HTTP protocol implementation for huntsman"
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+huntsman.path = ".."

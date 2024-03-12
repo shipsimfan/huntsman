@@ -1,6 +1,6 @@
-use crate::runner::worker;
+use crate::{runner::worker, Transport};
 use std::{
-    net::{SocketAddr, TcpStream},
+    net::SocketAddr,
     sync::{
         atomic::AtomicUsize,
         mpsc::{sync_channel, SyncSender},
@@ -9,12 +9,12 @@ use std::{
 };
 
 /// A single worker thread which can handle on connection at a time
-pub(super) struct Worker {
+pub(super) struct Worker<Protocol: crate::Protocol> {
     /// The queue to send new connections
-    sender: SyncSender<(TcpStream, SocketAddr)>,
+    sender: SyncSender<(<Protocol::Transport as Transport>::Client, SocketAddr)>,
 }
 
-impl Worker {
+impl<Protocol: crate::Protocol> Worker<Protocol> {
     /// Spawns a new [`Worker`] thread
     pub(super) fn spawn(
         id: usize,
@@ -26,7 +26,7 @@ impl Worker {
         let (sender, connections) = sync_channel(1);
 
         std::thread::spawn(move || {
-            worker(
+            worker::<Protocol>(
                 id,
                 connections,
                 max_spare_workers,
@@ -40,7 +40,10 @@ impl Worker {
     }
 
     /// Sends a connection to the worker
-    pub(super) fn send_connection(&mut self, connection: (TcpStream, SocketAddr)) {
+    pub(super) fn send_connection(
+        &mut self,
+        connection: (<Protocol::Transport as Transport>::Client, SocketAddr),
+    ) {
         self.sender.send(connection).unwrap();
     }
 }

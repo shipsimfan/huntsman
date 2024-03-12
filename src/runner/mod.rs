@@ -1,5 +1,4 @@
-use crate::{Error, Result};
-use std::net::TcpListener;
+use crate::{Error, Result, Transport};
 use worker::worker;
 
 mod options;
@@ -11,8 +10,8 @@ pub use options::Options;
 use self::worker_pool::WorkerPool;
 
 /// Run a huntsman server on the current thread
-pub fn run(options: Options) -> Result<!> {
-    let mut workers = WorkerPool::new(
+pub fn run<Protocol: crate::Protocol>(options: Options) -> Result<!, Protocol> {
+    let mut workers = WorkerPool::<Protocol>::new(
         options.max_connections().get(),
         options.initial_workers().get(),
         options.min_spare_workers(),
@@ -20,8 +19,8 @@ pub fn run(options: Options) -> Result<!> {
     );
 
     let address = options.socket_address();
-    let listener =
-        TcpListener::bind(address).map_err(|error| Error::ListenBindFailed((error, address)))?;
+    let mut listener = Protocol::Transport::bind(address)
+        .map_err(|error| Error::ListenBindFailed((error, address)))?;
 
     loop {
         let client = match listener.accept() {

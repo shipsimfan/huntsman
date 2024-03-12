@@ -1,6 +1,6 @@
-use crate::Result;
+use crate::{Result, Transport};
 use std::{
-    net::{SocketAddr, TcpStream},
+    net::SocketAddr,
     sync::{
         atomic::{AtomicUsize, Ordering},
         mpsc::{Receiver, SyncSender},
@@ -9,9 +9,9 @@ use std::{
 };
 
 /// The function which worker threads run
-pub(super) fn worker(
+pub(super) fn worker<Protocol: crate::Protocol>(
     id: usize,
-    connections: Receiver<(TcpStream, SocketAddr)>,
+    connections: Receiver<(<Protocol::Transport as Transport>::Client, SocketAddr)>,
     max_spare_workers: usize,
     spare_worker_count: Arc<AtomicUsize>,
     spare_worker_queue: SyncSender<usize>,
@@ -21,7 +21,7 @@ pub(super) fn worker(
     loop {
         let (connection, address) = connections.recv().unwrap();
 
-        match handle_connection(connection, address) {
+        match handle_connection::<Protocol>(connection, address) {
             Ok(()) => {}
             Err(error) => eprintln!("Error while handling client connection: {}", error),
         }
@@ -40,7 +40,10 @@ pub(super) fn worker(
 }
 
 /// Handle an incoming connection from a client
-fn handle_connection(connection: TcpStream, address: SocketAddr) -> Result<()> {
+fn handle_connection<Protocol: crate::Protocol>(
+    connection: <Protocol::Transport as Transport>::Client,
+    address: SocketAddr,
+) -> Result<(), Protocol> {
     println!("Client connected from {}", address);
     Ok(())
 }
