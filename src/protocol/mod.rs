@@ -2,7 +2,7 @@ mod request;
 mod response;
 mod transport;
 
-pub use request::Request;
+pub use request::RequestParser;
 pub use response::Response;
 pub use transport::{Transport, TransportClient};
 
@@ -11,8 +11,8 @@ pub trait Protocol {
     /// The transport used by this protocol
     type Transport: Transport;
 
-    /// Request received from the client
-    type Request: Request;
+    /// Parser for requests from a client
+    type RequestParser: RequestParser<TransportClient = <Self::Transport as Transport>::Client>;
 
     /// Responses sent to the client
     type Response: Response;
