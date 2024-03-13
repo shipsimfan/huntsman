@@ -2,24 +2,24 @@ use super::Worker;
 use std::sync::{atomic::AtomicUsize, mpsc::SyncSender, Arc};
 
 /// The list of current workers
-pub(super) struct WorkerList<Protocol: crate::Protocol> {
+pub(super) struct WorkerList<App: crate::App> {
     /// The list of workers
-    workers: Box<[Node<Protocol>]>,
+    workers: Box<[Node<App>]>,
 
     /// The index of the first free node
     first_free: Option<usize>,
 }
 
 /// A node in the list of workers
-enum Node<Protocol: crate::Protocol> {
+enum Node<App: crate::App> {
     /// An unused node, containing the index of the next free node
     Free(Option<usize>),
 
     /// A used node containing a worker
-    Used(Worker<Protocol>),
+    Used(Worker<App>),
 }
 
-impl<Protocol: crate::Protocol> WorkerList<Protocol> {
+impl<App: crate::App> WorkerList<App> {
     /// Creates a new empty [`WorkerList`]
     pub(super) fn new(max_workers: usize) -> Self {
         let mut workers = Vec::with_capacity(max_workers);
@@ -35,7 +35,7 @@ impl<Protocol: crate::Protocol> WorkerList<Protocol> {
     }
 
     /// Gets a [`Worker`] based on its `id`
-    pub(super) fn get(&mut self, id: usize) -> &mut Worker<Protocol> {
+    pub(super) fn get(&mut self, id: usize) -> &mut Worker<App> {
         match &mut self.workers[id] {
             Node::Used(worker) => worker,
             Node::Free(_) => panic!("Attempting to get the worker of a free node"),

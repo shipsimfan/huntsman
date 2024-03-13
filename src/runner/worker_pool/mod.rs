@@ -1,4 +1,4 @@
-use crate::Transport;
+use crate::{Protocol, Transport};
 use list::WorkerList;
 use std::{
     net::SocketAddr,
@@ -13,9 +13,9 @@ use worker::Worker;
 mod list;
 mod worker;
 
-pub(super) struct WorkerPool<Protocol: crate::Protocol> {
+pub(super) struct WorkerPool<App: crate::App> {
     /// The list of active workers
-    workers: WorkerList<Protocol>,
+    workers: WorkerList<App>,
 
     /// The minimum number of spare workers
     min_spare_workers: usize,
@@ -42,7 +42,7 @@ pub(super) struct WorkerPool<Protocol: crate::Protocol> {
     dead_worker_queue_sender: SyncSender<usize>,
 }
 
-impl<Protocol: crate::Protocol> WorkerPool<Protocol> {
+impl<App: crate::App> WorkerPool<App> {
     /// Creates a new [`WorkerPool`] with `initial_workers` workers to begin
     pub(super) fn new(
         max_workers: usize,
@@ -86,7 +86,10 @@ impl<Protocol: crate::Protocol> WorkerPool<Protocol> {
     /// Returns `true` if there is a thread to handle the connection
     pub(super) fn accept(
         &mut self,
-        connection: (<Protocol::Transport as Transport>::Client, SocketAddr),
+        connection: (
+            <<App::Protocol as Protocol>::Transport as Transport>::Client,
+            SocketAddr,
+        ),
     ) -> bool {
         let result = self.do_accept(connection);
 
@@ -99,7 +102,10 @@ impl<Protocol: crate::Protocol> WorkerPool<Protocol> {
     /// Actually sends the `connection` to or spawns a worker thread to handle to the connection
     fn do_accept(
         &mut self,
-        connection: (<Protocol::Transport as Transport>::Client, SocketAddr),
+        connection: (
+            <<App::Protocol as Protocol>::Transport as Transport>::Client,
+            SocketAddr,
+        ),
     ) -> bool {
         // Try to send to an already spawned worker
         match self.spare_worker_queue.try_recv() {

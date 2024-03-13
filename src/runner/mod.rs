@@ -1,5 +1,6 @@
-use crate::{Error, Result, Transport};
+use crate::{Error, Protocol, Result, Transport};
 use worker::worker;
+use worker_pool::WorkerPool;
 
 mod options;
 mod worker;
@@ -7,11 +8,9 @@ mod worker_pool;
 
 pub use options::Options;
 
-use self::worker_pool::WorkerPool;
-
 /// Run a huntsman server on the current thread
-pub fn run<Protocol: crate::Protocol>(options: Options) -> Result<!, Protocol> {
-    let mut workers = WorkerPool::<Protocol>::new(
+pub fn run<App: crate::App>(options: Options) -> Result<!, App> {
+    let mut workers = WorkerPool::<App>::new(
         options.max_connections().get(),
         options.initial_workers().get(),
         options.min_spare_workers(),
@@ -19,7 +18,7 @@ pub fn run<Protocol: crate::Protocol>(options: Options) -> Result<!, Protocol> {
     );
 
     let address = options.socket_address();
-    let mut listener = Protocol::Transport::bind(address)
+    let mut listener = <App::Protocol as Protocol>::Transport::bind(address)
         .map_err(|error| Error::ListenBindFailed((error, address)))?;
 
     loop {

@@ -1,4 +1,4 @@
-use crate::{Result, Transport};
+use crate::{Protocol, Result, Transport};
 use std::{
     net::SocketAddr,
     sync::{
@@ -9,9 +9,12 @@ use std::{
 };
 
 /// The function which worker threads run
-pub(super) fn worker<Protocol: crate::Protocol>(
+pub(super) fn worker<App: crate::App>(
     id: usize,
-    connections: Receiver<(<Protocol::Transport as Transport>::Client, SocketAddr)>,
+    connections: Receiver<(
+        <<App::Protocol as Protocol>::Transport as Transport>::Client,
+        SocketAddr,
+    )>,
     max_spare_workers: usize,
     spare_worker_count: Arc<AtomicUsize>,
     spare_worker_queue: SyncSender<usize>,
@@ -21,7 +24,7 @@ pub(super) fn worker<Protocol: crate::Protocol>(
     loop {
         let (connection, address) = connections.recv().unwrap();
 
-        match handle_connection::<Protocol>(connection, address) {
+        match handle_connection::<App>(connection, address) {
             Ok(()) => {}
             Err(error) => eprintln!("Error while handling client connection: {}", error),
         }
@@ -40,10 +43,10 @@ pub(super) fn worker<Protocol: crate::Protocol>(
 }
 
 /// Handle an incoming connection from a client
-fn handle_connection<Protocol: crate::Protocol>(
-    connection: <Protocol::Transport as Transport>::Client,
+fn handle_connection<App: crate::App>(
+    connection: <<App::Protocol as Protocol>::Transport as Transport>::Client,
     address: SocketAddr,
-) -> Result<(), Protocol> {
+) -> Result<(), App> {
     println!("Client connected from {}", address);
     Ok(())
 }

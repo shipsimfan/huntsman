@@ -15,5 +15,5 @@ pub trait Protocol {
     type RequestParser: RequestParser<TransportClient = <Self::Transport as Transport>::Client>;
 
     /// Responses sent to the client
-    type Response: Response;
+    type Response: Response<TransportClient = <Self::Transport as Transport>::Client>;
 }

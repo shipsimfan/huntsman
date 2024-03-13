@@ -7,10 +7,12 @@
 #![warn(rustdoc::broken_intra_doc_links)]
 #![feature(never_type)]
 
+mod app;
 mod error;
 mod protocol;
 mod runner;
 
+pub use app::App;
 pub use error::{Error, Result};
 pub use protocol::{Protocol, RequestParser, Response, Transport, TransportClient};
 pub use runner::{run, Options};
