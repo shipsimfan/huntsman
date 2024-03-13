@@ -1,4 +1,4 @@
-use crate::{Protocol, Result, Transport};
+use crate::{Protocol, RequestParser, Response, Transport};
 use std::{
     net::SocketAddr,
     sync::{
@@ -19,15 +19,14 @@ pub(super) fn worker<App: crate::App>(
     spare_worker_count: Arc<AtomicUsize>,
     spare_worker_queue: SyncSender<usize>,
     dead_worker_queue: SyncSender<usize>,
+    app: Arc<App>,
 ) {
     // Handle incoming connections
     loop {
         let (connection, address) = connections.recv().unwrap();
 
-        match handle_connection::<App>(connection, address) {
-            Ok(()) => {}
-            Err(error) => eprintln!("Error while handling client connection: {}", error),
-        }
+        handle_connection::<App>(connection, address, &app);
+        app.on_client_disconnect(address);
 
         // Check if this thread should die or if it should make itself available for more
         // connections
@@ -42,11 +41,49 @@ pub(super) fn worker<App: crate::App>(
     }
 }
 
+/// Try `expr` and if it fails, inform the app and handle a response if given one
+macro_rules! r#try {
+    ($address: expr, $connection: expr, $app: expr, $expr: expr) => {
+        match $expr {
+            Ok(result) => result,
+            Err(error) => {
+                if let Some(response) = $app.parse_error($address, error) {
+                    if let Err(error) = response.send(&mut $connection) {
+                        $app.send_error($address, error);
+                    }
+                }
+
+                return;
+            }
+        }
+    };
+}
+
 /// Handle an incoming connection from a client
 fn handle_connection<App: crate::App>(
-    connection: <<App::Protocol as Protocol>::Transport as Transport>::Client,
+    mut connection: <<App::Protocol as Protocol>::Transport as Transport>::Client,
     address: SocketAddr,
-) -> Result<(), App> {
-    println!("Client connected from {}", address);
-    Ok(())
+    app: &Arc<App>,
+) {
+    app.on_client_connect(address, &mut connection);
+
+    let mut parser = r#try!(
+        address,
+        connection,
+        app,
+        <<App::Protocol as Protocol>::RequestParser as RequestParser>::new(
+            &mut connection,
+            address,
+        )
+    );
+
+    loop {
+        let request = r#try!(address, connection, app, parser.parse(&mut connection));
+
+        let response = app.handle_request(address, request);
+
+        if let Err(error) = response.send(&mut connection) {
+            return app.send_error(address, error);
+        }
+    }
 }

@@ -13,7 +13,7 @@ use worker::Worker;
 mod list;
 mod worker;
 
-pub(super) struct WorkerPool<App: crate::App> {
+pub(super) struct WorkerPool<'a, App: crate::App> {
     /// The list of active workers
     workers: WorkerList<App>,
 
@@ -40,15 +40,19 @@ pub(super) struct WorkerPool<App: crate::App> {
 
     /// A sender for the dead worker queue
     dead_worker_queue_sender: SyncSender<usize>,
+
+    /// A reference to the App
+    app: &'a Arc<App>,
 }
 
-impl<App: crate::App> WorkerPool<App> {
+impl<'a, App: crate::App> WorkerPool<'a, App> {
     /// Creates a new [`WorkerPool`] with `initial_workers` workers to begin
     pub(super) fn new(
         max_workers: usize,
         initial_workers: usize,
         min_spare_workers: usize,
         max_spare_workers: usize,
+        app: &'a Arc<App>,
     ) -> Self {
         // Create shared state
         let spare_worker_count = Arc::new(AtomicUsize::new(initial_workers));
@@ -64,6 +68,7 @@ impl<App: crate::App> WorkerPool<App> {
                     spare_worker_count.clone(),
                     spare_worker_queue_sender.clone(),
                     dead_worker_queue_sender.clone(),
+                    app.clone(),
                 )
                 .unwrap();
             spare_worker_queue_sender.send(worker_id).unwrap();
@@ -78,6 +83,7 @@ impl<App: crate::App> WorkerPool<App> {
             spare_worker_queue_sender,
             dead_worker_queue,
             dead_worker_queue_sender,
+            app,
         }
     }
 
@@ -123,6 +129,7 @@ impl<App: crate::App> WorkerPool<App> {
             self.spare_worker_count.clone(),
             self.spare_worker_queue_sender.clone(),
             self.dead_worker_queue_sender.clone(),
+            self.app.clone(),
         ) {
             Some(worker) => {
                 self.workers.get(worker).send_connection(connection);
@@ -138,6 +145,7 @@ impl<App: crate::App> WorkerPool<App> {
                 self.spare_worker_count.clone(),
                 self.spare_worker_queue_sender.clone(),
                 self.dead_worker_queue_sender.clone(),
+                self.app.clone(),
             ) {
                 Some(worker) => {
                     self.workers.get(worker).send_connection(connection);
@@ -177,6 +185,7 @@ impl<App: crate::App> WorkerPool<App> {
                     self.spare_worker_count.clone(),
                     self.spare_worker_queue_sender.clone(),
                     self.dead_worker_queue_sender.clone(),
+                    self.app.clone(),
                 )
                 .unwrap();
             self.spare_worker_queue_sender.send(worker_id).unwrap();

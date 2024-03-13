@@ -49,6 +49,7 @@ impl<App: crate::App> WorkerList<App> {
         spare_worker_count: Arc<AtomicUsize>,
         spare_worker_queue: SyncSender<usize>,
         dead_worker_queue: SyncSender<usize>,
+        app: Arc<App>,
     ) -> Option<usize> {
         let first_free = self.first_free?;
 
@@ -63,6 +64,7 @@ impl<App: crate::App> WorkerList<App> {
             spare_worker_count,
             spare_worker_queue,
             dead_worker_queue,
+            app,
         ));
 
         Some(first_free)

@@ -7,10 +7,7 @@ pub struct HTTPResponse {}
 impl Response for HTTPResponse {
     type TransportClient = TcpStream;
 
-    fn send(
-        self,
-        transport: &mut Self::TransportClient,
-    ) -> Result<(), <Self::TransportClient as huntsman::TransportClient>::Error> {
+    fn send(self, transport: &mut TcpStream) -> Result<(), std::io::Error> {
         todo!("HTTPResponse::send()")
     }
 }

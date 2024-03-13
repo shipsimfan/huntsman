@@ -1,6 +1,9 @@
 use crate::HTTPRequest;
 use huntsman::RequestParser;
-use std::{convert::Infallible, net::TcpStream};
+use std::{
+    convert::Infallible,
+    net::{SocketAddr, TcpStream},
+};
 
 pub struct HTTPRequestParser;
 
@@ -11,14 +14,11 @@ impl RequestParser for HTTPRequestParser {
 
     type Request<'a> = HTTPRequest;
 
-    fn new(_: &mut Self::TransportClient, _: std::net::SocketAddr) -> Result<Self, Self::Error> {
+    fn new(_: &mut TcpStream, _: SocketAddr) -> Result<Self, Infallible> {
         Ok(HTTPRequestParser)
     }
 
-    fn parse<'a>(
-        &'a mut self,
-        client: &mut Self::TransportClient,
-    ) -> Result<Self::Request<'a>, Self::Error> {
+    fn parse<'a>(&'a mut self, client: &mut TcpStream) -> Result<HTTPRequest, Infallible> {
         todo!("HTTPRequestParser::parse()");
     }
 }

@@ -25,6 +25,7 @@ impl<App: crate::App> Worker<App> {
         spare_worker_count: Arc<AtomicUsize>,
         spare_worker_queue: SyncSender<usize>,
         dead_worker_queue: SyncSender<usize>,
+        app: Arc<App>,
     ) -> Self {
         let (sender, connections) = sync_channel(1);
 
@@ -36,6 +37,7 @@ impl<App: crate::App> Worker<App> {
                 spare_worker_count,
                 spare_worker_queue,
                 dead_worker_queue,
+                app,
             )
         });
 

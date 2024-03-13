@@ -1,32 +1,61 @@
 use crate::{Protocol, RequestParser, Transport};
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 
 /// A huntsman application
-pub trait App {
+pub trait App: 'static + Send + Sync {
     /// The protocol this app runs on
     type Protocol: Protocol;
 
     /// Handle a request from a client
     fn handle_request<'a>(
-        self: Arc<Self>,
+        self: &Arc<Self>,
+        source: SocketAddr,
         request: <<Self::Protocol as Protocol>::RequestParser as RequestParser>::Request<'a>,
     ) -> <Self::Protocol as Protocol>::Response;
 
+    /// Called when the server starts
+    fn on_server_start(self: &Arc<Self>) {}
+
+    /// Called when a client connects to the server
+    ///
+    /// Returns `true` if the client should be accepted
+    #[allow(unused_variables)]
+    fn on_client_connect(
+        self: &Arc<Self>,
+        source: SocketAddr,
+        client: &mut <<Self::Protocol as Protocol>::Transport as Transport>::Client,
+    ) -> bool {
+        true
+    }
+
+    /// Called when a client disconnects
+    #[allow(unused_variables)]
+    fn on_client_disconnect(self: &Arc<Self>, source: SocketAddr) {}
+
     /// An error occurred while accepting a client
+    #[allow(unused_variables)]
     fn accept_error(
-        self: Arc<Self>,
+        self: &Arc<Self>,
         error: <<Self::Protocol as Protocol>::Transport as Transport>::Error,
-    );
+    ) {
+    }
 
     /// An error occurred while parsing a request from a client
+    #[allow(unused_variables)]
     fn parse_error(
-        self: Arc<Self>,
+        self: &Arc<Self>,
+        source: SocketAddr,
         error: <<Self::Protocol as Protocol>::RequestParser as RequestParser>::Error,
-    ) -> Option<<Self::Protocol as Protocol>::Response>;
+    ) -> Option<<Self::Protocol as Protocol>::Response> {
+        None
+    }
 
     /// An error occurred while sending the response
+    #[allow(unused_variables)]
     fn send_error(
-        self: Arc<Self>,
+        self: &Arc<Self>,
+        destination: SocketAddr,
         error: <<Self::Protocol as Protocol>::Transport as Transport>::Error,
-    );
+    ) {
+    }
 }
