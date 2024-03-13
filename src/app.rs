@@ -6,31 +6,29 @@ pub trait App: 'static + Send + Sync {
     /// The protocol this app runs on
     type Protocol: Protocol;
 
+    /// A state for any client that connects
+    type Client;
+
     /// Handle a request from a client
     fn handle_request<'a>(
         self: &Arc<Self>,
-        source: SocketAddr,
+        client: &mut Self::Client,
         request: <<Self::Protocol as Protocol>::RequestParser as RequestParser>::Request<'a>,
     ) -> <Self::Protocol as Protocol>::Response;
 
     /// Called when the server starts
-    fn on_server_start(self: &Arc<Self>) {}
+    #[allow(unused_variables)]
+    fn on_server_start(self: &Arc<Self>, address: SocketAddr) {}
 
     /// Called when a client connects to the server
     ///
-    /// Returns `true` if the client should be accepted
+    /// Returns [`None`] if the client should be rejected
     #[allow(unused_variables)]
-    fn on_client_connect(
-        self: &Arc<Self>,
-        source: SocketAddr,
-        client: &mut <<Self::Protocol as Protocol>::Transport as Transport>::Client,
-    ) -> bool {
-        true
-    }
+    fn on_client_connect(self: &Arc<Self>, source: SocketAddr) -> Option<Self::Client>;
 
     /// Called when a client disconnects
     #[allow(unused_variables)]
-    fn on_client_disconnect(self: &Arc<Self>, source: SocketAddr) {}
+    fn on_client_disconnect(self: &Arc<Self>, client: &mut Self::Client) {}
 
     /// An error occurred while accepting a client
     #[allow(unused_variables)]
@@ -44,7 +42,7 @@ pub trait App: 'static + Send + Sync {
     #[allow(unused_variables)]
     fn parse_error(
         self: &Arc<Self>,
-        source: SocketAddr,
+        client: &mut Self::Client,
         error: <<Self::Protocol as Protocol>::RequestParser as RequestParser>::Error,
     ) -> Option<<Self::Protocol as Protocol>::Response> {
         None
@@ -54,7 +52,7 @@ pub trait App: 'static + Send + Sync {
     #[allow(unused_variables)]
     fn send_error(
         self: &Arc<Self>,
-        destination: SocketAddr,
+        client: &mut Self::Client,
         error: <<Self::Protocol as Protocol>::Transport as Transport>::Error,
     ) {
     }

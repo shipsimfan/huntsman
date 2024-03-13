@@ -25,8 +25,10 @@ pub(super) fn worker<App: crate::App>(
     loop {
         let (connection, address) = connections.recv().unwrap();
 
-        handle_connection::<App>(connection, address, &app);
-        app.on_client_disconnect(address);
+        match handle_connection::<App>(connection, address, &app) {
+            Some(mut client) => app.on_client_disconnect(&mut client),
+            None => {}
+        }
 
         // Check if this thread should die or if it should make itself available for more
         // connections
@@ -43,17 +45,17 @@ pub(super) fn worker<App: crate::App>(
 
 /// Try `expr` and if it fails, inform the app and handle a response if given one
 macro_rules! r#try {
-    ($address: expr, $connection: expr, $app: expr, $expr: expr) => {
+    ($client: expr, $connection: expr, $app: expr, $expr: expr) => {
         match $expr {
             Ok(result) => result,
             Err(error) => {
-                if let Some(response) = $app.parse_error($address, error) {
+                if let Some(response) = $app.parse_error(&mut $client, error) {
                     if let Err(error) = response.send(&mut $connection) {
-                        $app.send_error($address, error);
+                        $app.send_error(&mut $client, error);
                     }
                 }
 
-                return;
+                return Some($client);
             }
         }
     };
@@ -64,11 +66,14 @@ fn handle_connection<App: crate::App>(
     mut connection: <<App::Protocol as Protocol>::Transport as Transport>::Client,
     address: SocketAddr,
     app: &Arc<App>,
-) {
-    app.on_client_connect(address, &mut connection);
+) -> Option<App::Client> {
+    let mut client = match app.on_client_connect(address) {
+        Some(client) => client,
+        None => return None,
+    };
 
     let mut parser = r#try!(
-        address,
+        client,
         connection,
         app,
         <<App::Protocol as Protocol>::RequestParser as RequestParser>::new(
@@ -78,12 +83,13 @@ fn handle_connection<App: crate::App>(
     );
 
     loop {
-        let request = r#try!(address, connection, app, parser.parse(&mut connection));
+        let request = r#try!(client, connection, app, parser.parse(&mut connection));
 
-        let response = app.handle_request(address, request);
+        let response = app.handle_request(&mut client, request);
 
         if let Err(error) = response.send(&mut connection) {
-            return app.send_error(address, error);
+            app.send_error(&mut client, error);
+            return Some(client);
         }
     }
 }

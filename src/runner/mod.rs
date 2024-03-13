@@ -1,5 +1,8 @@
 use crate::{Error, Protocol, Result, Transport};
-use std::sync::Arc;
+use std::{
+    net::{SocketAddr, SocketAddrV4},
+    sync::Arc,
+};
 use worker::worker;
 use worker_pool::WorkerPool;
 
@@ -24,6 +27,12 @@ pub fn run<App: crate::App>(app: App, options: Options) -> Result<!, App> {
     let address = options.socket_address();
     let mut listener = <App::Protocol as Protocol>::Transport::bind(address)
         .map_err(|error| Error::ListenBindFailed((error, address)))?;
+
+    app.on_server_start(
+        listener
+            .get_socket_address()
+            .unwrap_or(SocketAddr::V4(SocketAddrV4::new(0.into(), 0))),
+    );
 
     loop {
         let client = match listener.accept() {
