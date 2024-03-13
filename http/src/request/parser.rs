@@ -5,6 +5,7 @@ use std::{
     net::{SocketAddr, TcpStream},
 };
 
+/// A parser for HTTP requests
 pub struct HTTPRequestParser;
 
 impl RequestParser for HTTPRequestParser {
