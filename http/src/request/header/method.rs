@@ -2,6 +2,7 @@ use super::Stream;
 use crate::HTTPParseError;
 
 /// A method for the request
+#[derive(Debug)]
 pub enum HTTPMethod {
     /// The [`HTTPMethod::GET`] method requests transfer of a current selected representation for
     /// the target resource
@@ -30,7 +31,7 @@ impl HTTPMethod {
     pub(super) fn parse(stream: &mut Stream) -> Result<Self, HTTPParseError> {
         let method = stream.collect_until(b' ')?;
 
-        Ok(match method {
+        Ok(match &method[..method.len() - 1] {
             b"GET" => HTTPMethod::GET,
             b"HEAD" => HTTPMethod::HEAD,
             b"POST" => HTTPMethod::POST,

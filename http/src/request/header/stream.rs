@@ -17,14 +17,16 @@ impl<'a, 'b> Stream<'a, 'b> {
         buffer: &'a mut HTTPHeaderBuffer,
         stream: &'b mut TcpStream,
     ) -> Self {
+        buffer.reset();
+
         Stream { buffer, stream }
     }
 
     /// Attempts to collect bytes from the stream until a `predicate` returns true
     ///
-    /// This function returns a slice with the bytes up to but not including the byte the
-    /// `predicate` returns true on. The next character returned by this stream will be the one
-    /// following the character the predicate returned true on.
+    /// This function returns a slice with the bytes up to and including the byte the `predicate`
+    /// returns true on. The next character returned by this stream will be the one following the
+    /// character the predicate returned true on.
     ///
     /// If the end of the buffer is reached before the `predicate` returns true, the function will
     /// return an [`HTTPParseError::HeadersTooLong`]
@@ -32,13 +34,17 @@ impl<'a, 'b> Stream<'a, 'b> {
         &mut self,
         predicate: F,
     ) -> Result<&'a [u8], HTTPParseError> {
-        todo!("Stream::collect_until_predicate");
+        let start = self.buffer.index();
+
+        while !predicate(self.buffer.next(self.stream)?) {}
+
+        Ok(unsafe { self.buffer.subslice(start, self.buffer.index()) })
     }
 
     /// Attempts to collect bytes from the stream until a `c` byte is encountered
     ///
-    /// This function returns a slice with the bytes up to but not including `c`. The next
-    /// character returned by this stream will be the one following `c`.
+    /// This function returns a slice with the bytes up to and including `c`. The next character
+    /// returned by this stream will be the one following `c`.
     ///
     /// If the end of the buffer is reached before a `c` byte is encountered, the function will
     /// return an [`HTTPParseError::HeadersTooLong`]

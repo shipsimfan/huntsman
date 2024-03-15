@@ -21,7 +21,8 @@ impl huntsman::App for Static {
         client: &mut SocketAddr,
         request: HTTPRequest,
     ) -> HTTPResponse {
-        todo!("handle_request()");
+        println!("handle_request({:?})", request);
+        HTTPResponse::new()
     }
 
     fn on_client_connect(self: &Arc<Self>, source: SocketAddr) -> Option<SocketAddr> {
@@ -47,7 +48,8 @@ impl huntsman::App for Static {
             client, error
         );
 
-        todo!("Return a \"400 Bad Request\" response");
+        // TODO: Return a "400 Bad Request" response
+        Some(HTTPResponse::new())
     }
 
     fn send_error(self: &Arc<Self>, client: &mut Self::Client, error: std::io::Error) {

@@ -10,6 +10,7 @@ pub(super) use buffer::HTTPHeaderBuffer;
 pub(super) use stream::Stream;
 
 /// The header of an HTTP request
+#[derive(Debug)]
 pub struct HTTPRequestHeader {
     /// The request method
     method: HTTPMethod,

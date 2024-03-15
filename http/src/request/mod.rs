@@ -9,6 +9,7 @@ pub use header::{HTTPMethod, HTTPRequestHeader};
 pub use parser::HTTPRequestParser;
 
 /// An HTTP request received from a client
+#[derive(Debug)]
 pub struct HTTPRequest {
     header: HTTPRequestHeader,
 }
