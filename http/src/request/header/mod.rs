@@ -58,4 +58,19 @@ impl<'a> HTTPRequestHeader<'a> {
             fields,
         })
     }
+
+    /// Gets the method of this request
+    pub fn method(&self) -> HTTPMethod {
+        self.method
+    }
+
+    /// Gets the target of this request
+    pub fn target(&self) -> HTTPTarget<'a> {
+        self.target
+    }
+
+    /// Gets the fields of this request
+    pub fn fields(&self) -> &[HTTPField<'a>] {
+        &self.fields
+    }
 }

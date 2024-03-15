@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use header::{HTTPHeaderBuffer, Stream};
 
 mod error;
@@ -20,5 +22,13 @@ impl<'a> HTTPRequest<'a> {
         let header = HTTPRequestHeader::parse(stream)?;
 
         Ok(HTTPRequest { header })
+    }
+}
+
+impl<'a> Deref for HTTPRequest<'a> {
+    type Target = HTTPRequestHeader<'a>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.header
     }
 }

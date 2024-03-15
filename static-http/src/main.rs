@@ -21,7 +21,17 @@ impl huntsman::App for Static {
         client: &mut SocketAddr,
         request: HTTPRequest,
     ) -> HTTPResponse {
-        println!("handle_request({:?})", request);
+        println!(
+            "{} request for {} from {}",
+            request.method(),
+            request.target(),
+            client
+        );
+        for field in request.fields() {
+            println!("  {}", field);
+        }
+        println!();
+
         HTTPResponse::new()
     }
 

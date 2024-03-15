@@ -40,9 +40,19 @@ impl<'a> HTTPField<'a> {
             value: &value[..value.len() - 1],
         })
     }
+
+    /// Gets the name of this field
+    pub fn name(&self) -> &'a [u8] {
+        self.name
+    }
+
+    /// Gets the value of this field
+    pub fn value(&self) -> &'a [u8] {
+        self.value
+    }
 }
 
-impl<'a> std::fmt::Debug for HTTPField<'a> {
+impl<'a> std::fmt::Display for HTTPField<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -50,5 +60,14 @@ impl<'a> std::fmt::Debug for HTTPField<'a> {
             String::from_utf8_lossy(self.name),
             String::from_utf8_lossy(self.value)
         )
+    }
+}
+
+impl<'a> std::fmt::Debug for HTTPField<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HTTPField")
+            .field("name", &String::from_utf8_lossy(self.name))
+            .field("value", &String::from_utf8_lossy(self.value))
+            .finish()
     }
 }
