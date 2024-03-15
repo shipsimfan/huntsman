@@ -22,6 +22,11 @@ impl<'a, 'b> Stream<'a, 'b> {
         Stream { buffer, stream }
     }
 
+    /// Reads the next value from the stream without consuming it
+    pub(super) fn peek(&mut self) -> Result<u8, HTTPParseError> {
+        self.buffer.peek(self.stream)
+    }
+
     /// Attempts to collect bytes from the stream until a `predicate` returns true
     ///
     /// This function will provide the `predicate` with the next two bytes from the stream. The

@@ -33,6 +33,20 @@ impl<'a> HTTPRequestHeader<'a> {
             return Err(HTTPParseError::InvalidVersion);
         }
 
+        loop {
+            if stream.peek()? == b'\r' {
+                let end = stream.collect_until_newline()?;
+                if end != b"\r\n" {
+                    return Err(HTTPParseError::InvalidField);
+                }
+
+                break;
+            }
+
+            // TODO: Parse fields
+            stream.collect_until_newline()?;
+        }
+
         Ok(HTTPRequestHeader { method, target })
     }
 }

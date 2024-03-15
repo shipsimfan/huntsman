@@ -42,8 +42,8 @@ impl HTTPHeaderBuffer {
         std::slice::from_raw_parts(&self.buffer[start], end - start)
     }
 
-    /// Gets the next byte from the buffer or reads more bytes from `stream`
-    pub(super) fn next(&mut self, stream: &mut TcpStream) -> Result<u8, HTTPParseError> {
+    /// Reads the next value from `stream` without consuming it
+    pub(super) fn peek(&mut self, stream: &mut TcpStream) -> Result<u8, HTTPParseError> {
         if self.index == self.buffer.len() {
             return Err(HTTPParseError::HeadersTooLong);
         }
@@ -52,7 +52,12 @@ impl HTTPHeaderBuffer {
             self.read(stream)?;
         }
 
-        let ret = self.buffer[self.index];
+        Ok(self.buffer[self.index])
+    }
+
+    /// Gets the next byte from the buffer or reads more bytes from `stream`
+    pub(super) fn next(&mut self, stream: &mut TcpStream) -> Result<u8, HTTPParseError> {
+        let ret = self.peek(stream)?;
         self.index += 1;
         Ok(ret)
     }
