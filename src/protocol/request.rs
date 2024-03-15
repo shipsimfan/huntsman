@@ -10,7 +10,7 @@ pub trait RequestParser: 'static + Sized {
     type Error: Error;
 
     /// A request sent from a client
-    type Request<'a>: 'static + Sized;
+    type Request<'a>: Sized;
 
     /// Create a new [`RequestParser`] for a client
     fn new(client: &mut Self::TransportClient, address: SocketAddr) -> Result<Self, Self::Error>;

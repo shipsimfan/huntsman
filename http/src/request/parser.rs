@@ -15,7 +15,7 @@ impl RequestParser for HTTPRequestParser {
 
     type Error = HTTPParseError;
 
-    type Request<'a> = HTTPRequest;
+    type Request<'a> = HTTPRequest<'a>;
 
     fn new(_: &mut Self::TransportClient, _: std::net::SocketAddr) -> Result<Self, Self::Error> {
         let buffer = HTTPHeaderBuffer::new(BUFFER_SIZE);
@@ -23,7 +23,7 @@ impl RequestParser for HTTPRequestParser {
         Ok(HTTPRequestParser { buffer })
     }
 
-    fn parse<'a>(&'a mut self, client: &mut TcpStream) -> Result<HTTPRequest, HTTPParseError> {
+    fn parse<'a>(&'a mut self, client: &mut TcpStream) -> Result<HTTPRequest<'a>, HTTPParseError> {
         let mut stream = Stream::new(&mut self.buffer, client);
 
         HTTPRequest::parse(&mut stream)

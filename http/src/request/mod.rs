@@ -10,13 +10,13 @@ pub use parser::HTTPRequestParser;
 
 /// An HTTP request received from a client
 #[derive(Debug)]
-pub struct HTTPRequest {
-    header: HTTPRequestHeader,
+pub struct HTTPRequest<'a> {
+    header: HTTPRequestHeader<'a>,
 }
 
-impl HTTPRequest {
+impl<'a> HTTPRequest<'a> {
     /// Attempts to parse an [`HTTPRequest`] from `stream`
-    pub(self) fn parse(stream: &mut Stream) -> Result<Self, HTTPParseError> {
+    pub(self) fn parse(stream: &mut Stream<'a, '_>) -> Result<Self, HTTPParseError> {
         let header = HTTPRequestHeader::parse(stream)?;
 
         Ok(HTTPRequest { header })
