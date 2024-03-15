@@ -27,6 +27,23 @@ impl<'a, 'b> Stream<'a, 'b> {
         self.buffer.peek(self.stream)
     }
 
+    pub(super) fn next(&mut self) -> Result<u8, HTTPParseError> {
+        self.buffer.next(self.stream)
+    }
+
+    /// Skips any whitespace (space or tab) characters in the stream until reaching a
+    /// non-whitespace character
+    pub(super) fn skip_whitespace(&mut self) -> Result<(), HTTPParseError> {
+        loop {
+            match self.peek()? {
+                b' ' | b'\t' => self.next()?,
+                _ => break,
+            };
+        }
+
+        Ok(())
+    }
+
     /// Attempts to collect bytes from the stream until a `predicate` returns true
     ///
     /// This function will provide the `predicate` with the next two bytes from the stream. The
@@ -45,12 +62,12 @@ impl<'a, 'b> Stream<'a, 'b> {
     ) -> Result<&'a [u8], HTTPParseError> {
         let start = self.buffer.index();
 
-        let mut prev = self.buffer.next(self.stream)?;
-        let mut next = self.buffer.next(self.stream)?;
+        let mut prev = self.next()?;
+        let mut next = self.next()?;
 
         while !predicate(prev, next) {
             prev = next;
-            next = self.buffer.next(self.stream)?;
+            next = self.next()?;
         }
 
         Ok(unsafe { self.buffer.subslice(start, self.buffer.index()) })
@@ -70,7 +87,7 @@ impl<'a, 'b> Stream<'a, 'b> {
     ) -> Result<&'a [u8], HTTPParseError> {
         let start = self.buffer.index();
 
-        while !predicate(self.buffer.next(self.stream)?)? {}
+        while !predicate(self.next()?)? {}
 
         Ok(unsafe { self.buffer.subslice(start, self.buffer.index()) })
     }

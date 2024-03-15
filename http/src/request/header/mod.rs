@@ -1,10 +1,12 @@
 use crate::HTTPParseError;
 
 mod buffer;
+mod field;
 mod method;
 mod stream;
 mod target;
 
+pub use field::HTTPField;
 pub use method::HTTPMethod;
 pub use target::HTTPTarget;
 
@@ -19,6 +21,9 @@ pub struct HTTPRequestHeader<'a> {
 
     /// The target for the request
     target: HTTPTarget<'a>,
+
+    /// The fields containing metadata about this request
+    fields: Vec<HTTPField<'a>>,
 }
 
 impl<'a> HTTPRequestHeader<'a> {
@@ -33,6 +38,7 @@ impl<'a> HTTPRequestHeader<'a> {
             return Err(HTTPParseError::InvalidVersion);
         }
 
+        let mut fields = Vec::new();
         loop {
             if stream.peek()? == b'\r' {
                 let end = stream.collect_until_newline()?;
@@ -43,10 +49,13 @@ impl<'a> HTTPRequestHeader<'a> {
                 break;
             }
 
-            // TODO: Parse fields
-            stream.collect_until_newline()?;
+            fields.push(HTTPField::parse(stream)?);
         }
 
-        Ok(HTTPRequestHeader { method, target })
+        Ok(HTTPRequestHeader {
+            method,
+            target,
+            fields,
+        })
     }
 }
