@@ -6,8 +6,8 @@ pub enum HTTPParseError {
     /// The headers is too long to fit into the buffer
     HeadersTooLong,
 
-    /// The client disconnected while reading
-    Disconnected,
+    /// The client sent an incomplete header before disconnecting
+    IncompleteHeader,
 
     /// An I/O error occurred while parsing a request
     IO(std::io::Error),
@@ -20,7 +20,7 @@ impl std::error::Error for HTTPParseError {
 
             HTTPParseError::InvalidMethod
             | HTTPParseError::HeadersTooLong
-            | HTTPParseError::Disconnected => None,
+            | HTTPParseError::IncompleteHeader => None,
         }
     }
 }
@@ -30,7 +30,7 @@ impl std::fmt::Display for HTTPParseError {
         match self {
             HTTPParseError::InvalidMethod => write!(f, "invalid method"),
             HTTPParseError::HeadersTooLong => write!(f, "headers too long"),
-            HTTPParseError::Disconnected => write!(f, "client disconnected while reading"),
+            HTTPParseError::IncompleteHeader => write!(f, "header is incomplete"),
 
             HTTPParseError::IO(error) => write!(
                 f,

@@ -78,7 +78,7 @@ impl HTTPHeaderBuffer {
         let count = stream.read(&mut self.buffer[self.length..])?;
 
         if count == 0 {
-            return Err(HTTPParseError::Disconnected);
+            return Err(HTTPParseError::IncompleteHeader);
         }
 
         self.length += count;
