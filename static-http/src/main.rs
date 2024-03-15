@@ -1,5 +1,5 @@
-use huntsman_http::{HTTPRequest, HTTPResponse, HTTP};
-use std::{convert::Infallible, net::SocketAddr, sync::Arc};
+use huntsman_http::{HTTPParseError, HTTPRequest, HTTPResponse, HTTP};
+use std::{net::SocketAddr, sync::Arc};
 
 struct Static;
 
@@ -40,7 +40,7 @@ impl huntsman::App for Static {
     fn parse_error(
         self: &Arc<Self>,
         client: &mut Self::Client,
-        error: Infallible,
+        error: HTTPParseError,
     ) -> Option<HTTPResponse> {
         eprintln!(
             "An error occurred while parsing a request from {} - {}",
