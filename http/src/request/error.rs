@@ -3,6 +3,9 @@ pub enum HTTPParseError {
     /// An invalid method was provided
     InvalidMethod,
 
+    /// The headers is too long to fit into the buffer
+    HeadersTooLong,
+
     /// An I/O error occurred while parsing a request
     IO(std::io::Error),
 }
@@ -12,7 +15,7 @@ impl std::error::Error for HTTPParseError {
         match self {
             HTTPParseError::IO(error) => Some(error),
 
-            HTTPParseError::InvalidMethod => None,
+            HTTPParseError::InvalidMethod | HTTPParseError::HeadersTooLong => None,
         }
     }
 }
@@ -21,6 +24,7 @@ impl std::fmt::Display for HTTPParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             HTTPParseError::InvalidMethod => write!(f, "invalid method"),
+            HTTPParseError::HeadersTooLong => write!(f, "headers too long"),
 
             HTTPParseError::IO(error) => write!(
                 f,

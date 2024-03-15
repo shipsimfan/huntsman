@@ -1,4 +1,5 @@
-use crate::{request::Stream, HTTPParseError};
+use super::Stream;
+use crate::HTTPParseError;
 
 /// A method for the request
 pub enum HTTPMethod {
@@ -24,16 +25,12 @@ pub enum HTTPMethod {
     DELETE,
 }
 
-/// The length of the longest method ("DELETE")
-const LONGEST_METHOD: usize = b"DELETE".len();
-
 impl HTTPMethod {
-    /// Attempts to parse an [`HTTPMethod`] from the `stream`
+    /// Attempts to parse an [`HTTPMethod`] from `stream`
     pub(super) fn parse(stream: &mut Stream) -> Result<Self, HTTPParseError> {
-        let mut buffer = [0; LONGEST_METHOD];
-        let length = stream.collect_until(b' ', &mut buffer)?;
+        let method = stream.collect_until(b' ')?;
 
-        Ok(match &buffer[..length] {
+        Ok(match method {
             b"GET" => HTTPMethod::GET,
             b"HEAD" => HTTPMethod::HEAD,
             b"POST" => HTTPMethod::POST,
