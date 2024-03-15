@@ -28,6 +28,11 @@ impl<'a> HTTPRequestHeader<'a> {
 
         let target = HTTPTarget::parse(stream)?;
 
+        let version = stream.collect_until_newline()?;
+        if &version[..version.len() - 2] != b"HTTP/1.1" {
+            return Err(HTTPParseError::InvalidVersion);
+        }
+
         Ok(HTTPRequestHeader { method, target })
     }
 }

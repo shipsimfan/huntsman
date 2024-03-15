@@ -41,7 +41,7 @@ impl<'a> HTTPTarget<'a> {
             _ => Err(HTTPParseError::InvalidTarget),
         })?;
 
-        Ok(HTTPTarget(uri))
+        Ok(HTTPTarget(&uri[..uri.len() - 1]))
     }
 }
 

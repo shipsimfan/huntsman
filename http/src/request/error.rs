@@ -12,6 +12,9 @@ pub enum HTTPParseError {
     /// The requested target contains invalid characters
     InvalidTarget,
 
+    /// The HTTP header contains an invalid version
+    InvalidVersion,
+
     /// An I/O error occurred while parsing a request
     IO(std::io::Error),
 }
@@ -24,7 +27,8 @@ impl std::error::Error for HTTPParseError {
             HTTPParseError::InvalidMethod
             | HTTPParseError::HeadersTooLong
             | HTTPParseError::IncompleteHeader
-            | HTTPParseError::InvalidTarget => None,
+            | HTTPParseError::InvalidTarget
+            | HTTPParseError::InvalidVersion => None,
         }
     }
 }
@@ -36,6 +40,7 @@ impl std::fmt::Display for HTTPParseError {
             HTTPParseError::HeadersTooLong => write!(f, "headers too long"),
             HTTPParseError::IncompleteHeader => write!(f, "header is incomplete"),
             HTTPParseError::InvalidTarget => write!(f, "invalid target"),
+            HTTPParseError::InvalidVersion => write!(f, "invalid version"),
 
             HTTPParseError::IO(error) => write!(
                 f,
