@@ -47,7 +47,7 @@ impl huntsman::App for Static {
             client, error
         );
 
-        None
+        todo!("Return a \"400 Bad Request\" response");
     }
 
     fn send_error(self: &Arc<Self>, client: &mut Self::Client, error: std::io::Error) {
