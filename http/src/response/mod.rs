@@ -58,6 +58,8 @@ impl HTTPResponse {
 
     /// Adds a field to the end of the fields for this response
     pub fn push_field(&mut self, field: HTTPResponseField) {
+        assert_ne!(field.name(), b"Content-Length", "\"Content-Length\" fields cannot be inserted into a response, this is managed by huntsman-http");
+
         self.fields.push(field);
     }
 
