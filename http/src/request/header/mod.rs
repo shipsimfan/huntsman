@@ -73,4 +73,15 @@ impl<'a> HTTPRequestHeader<'a> {
     pub fn fields(&self) -> &[HTTPRequestField<'a>] {
         &self.fields
     }
+
+    /// Gets a contained field based on its name
+    pub fn field(&self, name: &[u8]) -> Option<&HTTPRequestField<'a>> {
+        for field in &self.fields {
+            if field.name() == name {
+                return Some(field);
+            }
+        }
+
+        None
+    }
 }
