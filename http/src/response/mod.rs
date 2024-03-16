@@ -16,15 +16,7 @@ pub struct HTTPResponse {
 
 impl HTTPResponse {
     /// Creates a new [`HTTPResponse`]
-    pub fn new(status: HTTPStatus, body: &'static [u8]) -> Self {
-        HTTPResponse {
-            status,
-            body: body.into(),
-        }
-    }
-
-    /// Creates a new [`HTTPResponse`]
-    pub fn new_owned(status: HTTPStatus, body: Vec<u8>) -> Self {
+    pub fn new<T: Into<Cow<'static, [u8]>>>(status: HTTPStatus, body: T) -> Self {
         HTTPResponse {
             status,
             body: body.into(),
@@ -47,12 +39,7 @@ impl HTTPResponse {
     }
 
     /// Sets the body of this response
-    pub fn set_body(&mut self, body: &'static [u8]) {
-        self.body = body.into();
-    }
-
-    /// Sets the body of this response
-    pub fn set_body_owned(&mut self, body: Vec<u8>) {
+    pub fn set_body<T: Into<Cow<'static, [u8]>>>(&mut self, body: T) {
         self.body = body.into();
     }
 }
@@ -77,6 +64,6 @@ impl Response for HTTPResponse {
 
 impl From<HTTPStatus> for HTTPResponse {
     fn from(status: HTTPStatus) -> Self {
-        HTTPResponse::new(status, &[])
+        HTTPResponse::new(status, b"" as &'static [u8])
     }
 }
