@@ -6,7 +6,7 @@ mod method;
 mod stream;
 mod target;
 
-pub use field::HTTPField;
+pub use field::HTTPRequestField;
 pub use method::HTTPMethod;
 pub use target::HTTPTarget;
 
@@ -23,7 +23,7 @@ pub struct HTTPRequestHeader<'a> {
     target: HTTPTarget<'a>,
 
     /// The fields containing metadata about this request
-    fields: Vec<HTTPField<'a>>,
+    fields: Vec<HTTPRequestField<'a>>,
 }
 
 impl<'a> HTTPRequestHeader<'a> {
@@ -49,7 +49,7 @@ impl<'a> HTTPRequestHeader<'a> {
                 break;
             }
 
-            fields.push(HTTPField::parse(stream)?);
+            fields.push(HTTPRequestField::parse(stream)?);
         }
 
         Ok(HTTPRequestHeader {
@@ -70,7 +70,7 @@ impl<'a> HTTPRequestHeader<'a> {
     }
 
     /// Gets the fields of this request
-    pub fn fields(&self) -> &[HTTPField<'a>] {
+    pub fn fields(&self) -> &[HTTPRequestField<'a>] {
         &self.fields
     }
 }

@@ -1,4 +1,6 @@
-use huntsman_http::{HTTPParseError, HTTPRequest, HTTPResponse, HTTPStatus, HTTP};
+use huntsman_http::{
+    HTTPParseError, HTTPRequest, HTTPResponse, HTTPResponseField, HTTPStatus, HTTP,
+};
 use std::{net::SocketAddr, sync::Arc};
 
 struct Static;
@@ -34,7 +36,14 @@ impl huntsman::App for Static {
         }
         println!();
 
-        HTTPResponse::new(HTTPStatus::NotFound, NOT_FOUND)
+        let mut response = HTTPResponse::new(HTTPStatus::NotFound, NOT_FOUND);
+
+        response.push_field(HTTPResponseField::new(
+            "Content-Type".as_bytes(),
+            "text/html; charset=utf-8".as_bytes(),
+        ));
+
+        response
     }
 
     fn on_client_connect(self: &Arc<Self>, source: SocketAddr) -> Option<SocketAddr> {

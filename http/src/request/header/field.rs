@@ -2,7 +2,7 @@ use super::Stream;
 use crate::HTTPParseError;
 
 /// A field containing metadata about an HTTP request
-pub struct HTTPField<'a> {
+pub struct HTTPRequestField<'a> {
     /// The name of the field
     name: &'a [u8],
 
@@ -10,7 +10,7 @@ pub struct HTTPField<'a> {
     value: &'a [u8],
 }
 
-impl<'a> HTTPField<'a> {
+impl<'a> HTTPRequestField<'a> {
     /// Attempts to parse an [`HTTPField`] from `stream`
     pub(super) fn parse(stream: &mut Stream<'a, '_>) -> Result<Self, HTTPParseError> {
         let name = stream.collect_until_predicate_error(|c| match c {
@@ -35,7 +35,7 @@ impl<'a> HTTPField<'a> {
             return Err(HTTPParseError::InvalidField);
         }
 
-        Ok(HTTPField {
+        Ok(HTTPRequestField {
             name: &name[..name.len() - 1],
             value: &value[..value.len() - 1],
         })
@@ -52,7 +52,7 @@ impl<'a> HTTPField<'a> {
     }
 }
 
-impl<'a> std::fmt::Display for HTTPField<'a> {
+impl<'a> std::fmt::Display for HTTPRequestField<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -63,7 +63,7 @@ impl<'a> std::fmt::Display for HTTPField<'a> {
     }
 }
 
-impl<'a> std::fmt::Debug for HTTPField<'a> {
+impl<'a> std::fmt::Debug for HTTPRequestField<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HTTPField")
             .field("name", &String::from_utf8_lossy(self.name))
