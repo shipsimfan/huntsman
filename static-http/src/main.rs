@@ -3,6 +3,8 @@ use std::{net::SocketAddr, sync::Arc};
 
 struct Static;
 
+const NOT_FOUND: &[u8] = include_bytes!("../404.html");
+
 fn main() {
     huntsman::run(Static, huntsman::Options::default()).unwrap()
 }
@@ -32,7 +34,7 @@ impl huntsman::App for Static {
         }
         println!();
 
-        HTTPStatus::NotFound.into()
+        HTTPResponse::new(HTTPStatus::NotFound, NOT_FOUND)
     }
 
     fn on_client_connect(self: &Arc<Self>, source: SocketAddr) -> Option<SocketAddr> {
