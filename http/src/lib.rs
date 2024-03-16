@@ -13,7 +13,7 @@ mod request;
 mod response;
 
 pub use request::{HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestHeader, HTTPRequestParser};
-pub use response::HTTPResponse;
+pub use response::{HTTPResponse, HTTPStatus};
 
 /// The HTTP protocol
 pub struct HTTP;

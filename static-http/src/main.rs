@@ -1,4 +1,4 @@
-use huntsman_http::{HTTPParseError, HTTPRequest, HTTPResponse, HTTP};
+use huntsman_http::{HTTPParseError, HTTPRequest, HTTPResponse, HTTPStatus, HTTP};
 use std::{net::SocketAddr, sync::Arc};
 
 struct Static;
@@ -32,7 +32,7 @@ impl huntsman::App for Static {
         }
         println!();
 
-        HTTPResponse::new()
+        HTTPStatus::NotFound.into()
     }
 
     fn on_client_connect(self: &Arc<Self>, source: SocketAddr) -> Option<SocketAddr> {
@@ -58,8 +58,10 @@ impl huntsman::App for Static {
             client, error
         );
 
-        // TODO: Return a "400 Bad Request" response
-        Some(HTTPResponse::new())
+        Some(match error {
+            HTTPParseError::HeadersTooLong => HTTPStatus::ContentTooLarge.into(),
+            _ => HTTPStatus::BadRequest.into(),
+        })
     }
 
     fn send_error(self: &Arc<Self>, client: &mut Self::Client, error: std::io::Error) {
