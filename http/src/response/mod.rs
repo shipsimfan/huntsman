@@ -1,13 +1,13 @@
 use huntsman::Response;
+use name::SERVER;
 use std::{borrow::Cow, io::Write, net::TcpStream};
 
 mod field;
+mod name;
 mod status;
 
 pub use field::HTTPResponseField;
 pub use status::HTTPStatus;
-
-const SERVER: &str = concat!("Huntsman/", env!("CARGO_PKG_VERSION"));
 
 /// An HTTP response to be sent to the client
 pub struct HTTPResponse {
