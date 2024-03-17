@@ -6,6 +6,7 @@
  3. Outline of different transports for HTTP, implementation not needed (HTTPS, HTTP2, HTTP3)
  4. Support chunked transfer encoding on requests
  5. Implement reading files for "static-http"
+ 6. "static-http" command line arguments
 
 ## Post 1.0
  1. Add support for additional transfer encodings on requests

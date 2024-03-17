@@ -62,7 +62,7 @@ impl huntsman::App for Static {
         eprintln!("An error occurred while accepting a client - {}", error);
     }
 
-    fn parse_error(
+    fn read_error(
         self: &Arc<Self>,
         client: &mut Self::Client,
         error: HTTPParseError,

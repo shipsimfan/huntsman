@@ -2,24 +2,24 @@ use super::Worker;
 use std::sync::{atomic::AtomicUsize, mpsc::SyncSender, Arc};
 
 /// The list of current workers
-pub(super) struct WorkerList<App: crate::App> {
+pub(super) struct WorkerList<Protocol: crate::Protocol> {
     /// The list of workers
-    workers: Box<[Node<App>]>,
+    workers: Box<[Node<Protocol>]>,
 
     /// The index of the first free node
     first_free: Option<usize>,
 }
 
 /// A node in the list of workers
-enum Node<App: crate::App> {
+enum Node<Protocol: crate::Protocol> {
     /// An unused node, containing the index of the next free node
     Free(Option<usize>),
 
     /// A used node containing a worker
-    Used(Worker<App>),
+    Used(Worker<Protocol>),
 }
 
-impl<App: crate::App> WorkerList<App> {
+impl<Protocol: crate::Protocol> WorkerList<Protocol> {
     /// Creates a new empty [`WorkerList`]
     pub(super) fn new(max_workers: usize) -> Self {
         let mut workers = Vec::with_capacity(max_workers);
@@ -35,7 +35,7 @@ impl<App: crate::App> WorkerList<App> {
     }
 
     /// Gets a [`Worker`] based on its `id`
-    pub(super) fn get(&mut self, id: usize) -> &mut Worker<App> {
+    pub(super) fn get(&mut self, id: usize) -> &mut Worker<Protocol> {
         match &mut self.workers[id] {
             Node::Used(worker) => worker,
             Node::Free(_) => panic!("Attempting to get the worker of a free node"),
@@ -43,7 +43,7 @@ impl<App: crate::App> WorkerList<App> {
     }
 
     /// Spawns a new [`Worker`] and returns its id
-    pub(super) fn spawn(
+    pub(super) fn spawn<App: crate::App<Protocol = Protocol>>(
         &mut self,
         max_spare_workers: usize,
         spare_worker_count: Arc<AtomicUsize>,

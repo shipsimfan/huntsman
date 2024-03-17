@@ -1,21 +1,17 @@
-use crate::{Protocol, Transport};
 use list::WorkerList;
-use std::{
-    net::SocketAddr,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        mpsc::{sync_channel, Receiver, SyncSender},
-        Arc,
-    },
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    mpsc::{sync_channel, Receiver, SyncSender},
+    Arc,
 };
 use worker::Worker;
 
 mod list;
 mod worker;
 
-pub(super) struct WorkerPool<'a, App: crate::App> {
+pub(super) struct WorkerPool<'a, Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>> {
     /// The list of active workers
-    workers: WorkerList<App>,
+    workers: WorkerList<Protocol>,
 
     /// The minimum number of spare workers
     min_spare_workers: usize,
@@ -45,7 +41,9 @@ pub(super) struct WorkerPool<'a, App: crate::App> {
     app: &'a Arc<App>,
 }
 
-impl<'a, App: crate::App> WorkerPool<'a, App> {
+impl<'a, Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>>
+    WorkerPool<'a, Protocol, App>
+{
     /// Creates a new [`WorkerPool`] with `initial_workers` workers to begin
     pub(super) fn new(
         max_workers: usize,
@@ -90,13 +88,7 @@ impl<'a, App: crate::App> WorkerPool<'a, App> {
     /// Send `connection` to a worker to be handled
     ///
     /// Returns `true` if there is a thread to handle the connection
-    pub(super) fn accept(
-        &mut self,
-        connection: (
-            <<App::Protocol as Protocol>::Transport as Transport>::Client,
-            SocketAddr,
-        ),
-    ) -> bool {
+    pub(super) fn accept(&mut self, connection: (Protocol::Client, Protocol::Address)) -> bool {
         let result = self.do_accept(connection);
 
         self.clean_dead_workers();
@@ -106,13 +98,7 @@ impl<'a, App: crate::App> WorkerPool<'a, App> {
     }
 
     /// Actually sends the `connection` to or spawns a worker thread to handle to the connection
-    fn do_accept(
-        &mut self,
-        connection: (
-            <<App::Protocol as Protocol>::Transport as Transport>::Client,
-            SocketAddr,
-        ),
-    ) -> bool {
+    fn do_accept(&mut self, connection: (Protocol::Client, Protocol::Address)) -> bool {
         // Try to send to an already spawned worker
         match self.spare_worker_queue.try_recv() {
             Ok(worker) => {

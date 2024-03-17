@@ -1,5 +1,5 @@
-use crate::{Protocol, RequestParser, Transport};
-use std::{net::SocketAddr, sync::Arc};
+use crate::Protocol;
+use std::sync::Arc;
 
 /// A huntsman application
 pub trait App: 'static + Send + Sync {
@@ -13,18 +13,21 @@ pub trait App: 'static + Send + Sync {
     fn handle_request<'a>(
         self: &Arc<Self>,
         client: &mut Self::Client,
-        request: <<Self::Protocol as Protocol>::RequestParser as RequestParser>::Request<'a>,
+        request: <Self::Protocol as Protocol>::Request<'a>,
     ) -> <Self::Protocol as Protocol>::Response;
 
     /// Called when the server starts
     #[allow(unused_variables)]
-    fn on_server_start(self: &Arc<Self>, address: SocketAddr) {}
+    fn on_server_start(self: &Arc<Self>, addresses: &[<Self::Protocol as Protocol>::Address]) {}
 
     /// Called when a client connects to the server
     ///
     /// Returns [`None`] if the client should be rejected
     #[allow(unused_variables)]
-    fn on_client_connect(self: &Arc<Self>, source: SocketAddr) -> Option<Self::Client>;
+    fn on_client_connect(
+        self: &Arc<Self>,
+        source: <Self::Protocol as Protocol>::Address,
+    ) -> Option<Self::Client>;
 
     /// Called when a client disconnects
     #[allow(unused_variables)]
@@ -32,18 +35,14 @@ pub trait App: 'static + Send + Sync {
 
     /// An error occurred while accepting a client
     #[allow(unused_variables)]
-    fn accept_error(
-        self: &Arc<Self>,
-        error: <<Self::Protocol as Protocol>::Transport as Transport>::Error,
-    ) {
-    }
+    fn accept_error(self: &Arc<Self>, error: <Self::Protocol as Protocol>::ListenError) {}
 
     /// An error occurred while parsing a request from a client
     #[allow(unused_variables)]
-    fn parse_error(
+    fn read_error(
         self: &Arc<Self>,
         client: &mut Self::Client,
-        error: <<Self::Protocol as Protocol>::RequestParser as RequestParser>::Error,
+        error: <Self::Protocol as Protocol>::ReadError,
     ) -> Option<<Self::Protocol as Protocol>::Response> {
         None
     }
@@ -53,7 +52,7 @@ pub trait App: 'static + Send + Sync {
     fn send_error(
         self: &Arc<Self>,
         client: &mut Self::Client,
-        error: <<Self::Protocol as Protocol>::Transport as Transport>::Error,
+        error: <Self::Protocol as Protocol>::SendError,
     ) {
     }
 }

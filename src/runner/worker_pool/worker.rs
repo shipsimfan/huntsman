@@ -1,25 +1,19 @@
-use crate::{runner::worker, Protocol, Transport};
-use std::{
-    net::SocketAddr,
-    sync::{
-        atomic::AtomicUsize,
-        mpsc::{sync_channel, SyncSender},
-        Arc,
-    },
+use crate::runner::worker;
+use std::sync::{
+    atomic::AtomicUsize,
+    mpsc::{sync_channel, SyncSender},
+    Arc,
 };
 
 /// A single worker thread which can handle on connection at a time
-pub(super) struct Worker<App: crate::App> {
+pub(super) struct Worker<Protocol: crate::Protocol> {
     /// The queue to send new connections
-    sender: SyncSender<(
-        <<App::Protocol as Protocol>::Transport as Transport>::Client,
-        SocketAddr,
-    )>,
+    sender: SyncSender<(Protocol::Client, Protocol::Address)>,
 }
 
-impl<App: crate::App> Worker<App> {
+impl<Protocol: crate::Protocol> Worker<Protocol> {
     /// Spawns a new [`Worker`] thread
-    pub(super) fn spawn(
+    pub(super) fn spawn<App: crate::App<Protocol = Protocol>>(
         id: usize,
         max_spare_workers: usize,
         spare_worker_count: Arc<AtomicUsize>,
@@ -30,7 +24,7 @@ impl<App: crate::App> Worker<App> {
         let (sender, connections) = sync_channel(1);
 
         std::thread::spawn(move || {
-            worker::<App>(
+            worker(
                 id,
                 connections,
                 max_spare_workers,
@@ -45,13 +39,7 @@ impl<App: crate::App> Worker<App> {
     }
 
     /// Sends a connection to the worker
-    pub(super) fn send_connection(
-        &mut self,
-        connection: (
-            <<App::Protocol as Protocol>::Transport as Transport>::Client,
-            SocketAddr,
-        ),
-    ) {
+    pub(super) fn send_connection(&mut self, connection: (Protocol::Client, Protocol::Address)) {
         self.sender.send(connection).unwrap();
     }
 }

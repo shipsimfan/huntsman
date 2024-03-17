@@ -1,39 +1,19 @@
-use crate::{Protocol, Transport};
-use std::net::SocketAddr;
-
-/// A type representing a potential error
-pub type Result<T, App> = core::result::Result<T, Error<App>>;
-
 /// An error during the runtime of the server
-pub enum Error<App: crate::App> {
-    /// Binding the listen socket failed
-    ListenBindFailed(
-        (
-            <<App::Protocol as Protocol>::Transport as Transport>::Error,
-            SocketAddr,
-        ),
-    ),
-}
+pub struct StartError<Protocol: crate::Protocol>(pub(crate) Protocol::ListenError);
 
-impl<App: crate::App> std::error::Error for Error<App> {
+impl<Protocol: crate::Protocol> std::error::Error for StartError<Protocol> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Error::ListenBindFailed((error, _)) => Some(error),
-        }
+        Some(&self.0)
     }
 }
 
-impl<App: crate::App> std::fmt::Display for Error<App> {
+impl<Protocol: crate::Protocol> std::fmt::Display for StartError<Protocol> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::ListenBindFailed((error, address)) => {
-                write!(f, "Unable to begin listening on {} - {}", address, error)
-            }
-        }
+        write!(f, "unable to start server - {}", self.0)
     }
 }
 
-impl<App: crate::App> std::fmt::Debug for Error<App> {
+impl<Protocol: crate::Protocol> std::fmt::Debug for StartError<Protocol> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self, f)
     }

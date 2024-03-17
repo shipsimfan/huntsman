@@ -70,7 +70,7 @@ impl HTTPResponse {
 }
 
 impl Response for HTTPResponse {
-    type TransportClient = TcpStream;
+    type Client = TcpStream;
 
     fn send(self, transport: &mut TcpStream) -> Result<(), std::io::Error> {
         transport.write_all(b"HTTP/1.1 ")?;

@@ -14,6 +14,6 @@ mod protocol;
 mod runner;
 
 pub use app::App;
-pub use error::{Error, Result};
-pub use protocol::{Protocol, RequestParser, Response, Transport, TransportClient};
+pub use error::StartError;
+pub use protocol::{Protocol, ProtocolClient};
 pub use runner::{run, Options};

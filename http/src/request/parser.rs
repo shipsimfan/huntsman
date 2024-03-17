@@ -11,13 +11,13 @@ pub struct HTTPRequestParser {
 const BUFFER_SIZE: usize = 8192;
 
 impl RequestParser for HTTPRequestParser {
-    type TransportClient = TcpStream;
+    type Client = TcpStream;
 
     type Error = HTTPParseError;
 
     type Request<'a> = HTTPRequest<'a>;
 
-    fn new(_: &mut Self::TransportClient, _: std::net::SocketAddr) -> Result<Self, Self::Error> {
+    fn new(_: &mut Self::Client, _: std::net::SocketAddr) -> Result<Self, Self::Error> {
         let buffer = HTTPHeaderBuffer::new(BUFFER_SIZE);
 
         Ok(HTTPRequestParser { buffer })

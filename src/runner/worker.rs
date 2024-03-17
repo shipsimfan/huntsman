@@ -1,20 +1,14 @@
-use crate::{Protocol, RequestParser, Response, Transport};
-use std::{
-    net::SocketAddr,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        mpsc::{Receiver, SyncSender},
-        Arc,
-    },
+use crate::ProtocolClient;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    mpsc::{Receiver, SyncSender},
+    Arc,
 };
 
 /// The function which worker threads run
-pub(super) fn worker<App: crate::App>(
+pub(super) fn worker<Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>>(
     id: usize,
-    connections: Receiver<(
-        <<App::Protocol as Protocol>::Transport as Transport>::Client,
-        SocketAddr,
-    )>,
+    connections: Receiver<(Protocol::Client, Protocol::Address)>,
     max_spare_workers: usize,
     spare_worker_count: Arc<AtomicUsize>,
     spare_worker_queue: SyncSender<usize>,
@@ -25,7 +19,7 @@ pub(super) fn worker<App: crate::App>(
     loop {
         let (connection, address) = connections.recv().unwrap();
 
-        match handle_connection::<App>(connection, address, &app) {
+        match handle_connection(connection, address, &app) {
             Some(mut client) => app.on_client_disconnect(&mut client),
             None => {}
         }
@@ -43,28 +37,10 @@ pub(super) fn worker<App: crate::App>(
     }
 }
 
-/// Try `expr` and if it fails, inform the app and handle a response if given one
-macro_rules! r#try {
-    ($client: expr, $connection: expr, $app: expr, $expr: expr) => {
-        match $expr {
-            Ok(result) => result,
-            Err(error) => {
-                if let Some(response) = $app.parse_error(&mut $client, error) {
-                    if let Err(error) = response.send(&mut $connection) {
-                        $app.send_error(&mut $client, error);
-                    }
-                }
-
-                return Some($client);
-            }
-        }
-    };
-}
-
 /// Handle an incoming connection from a client
-fn handle_connection<App: crate::App>(
-    mut connection: <<App::Protocol as Protocol>::Transport as Transport>::Client,
-    address: SocketAddr,
+fn handle_connection<Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>>(
+    mut connection: Protocol::Client,
+    address: Protocol::Address,
     app: &Arc<App>,
 ) -> Option<App::Client> {
     let mut client = match app.on_client_connect(address) {
@@ -72,24 +48,31 @@ fn handle_connection<App: crate::App>(
         None => return None,
     };
 
-    let mut parser = r#try!(
-        client,
-        connection,
-        app,
-        <<App::Protocol as Protocol>::RequestParser as RequestParser>::new(
-            &mut connection,
-            address,
-        )
-    );
+    let response = loop {
+        let request = match connection.read() {
+            Ok(result) => result,
+            Err(error) => {
+                if let Some(response) = app.read_error(&mut client, error) {
+                    break Some(response);
+                }
 
-    loop {
-        let request = r#try!(client, connection, app, parser.parse(&mut connection));
+                break None;
+            }
+        };
 
         let response = app.handle_request(&mut client, request);
 
-        if let Err(error) = response.send(&mut connection) {
+        if let Err(error) = connection.send(response) {
             app.send_error(&mut client, error);
-            return Some(client);
+            break None;
+        }
+    };
+
+    if let Some(response) = response {
+        if let Err(error) = connection.send(response) {
+            app.send_error(&mut client, error);
         }
     }
+
+    Some(client)
 }
