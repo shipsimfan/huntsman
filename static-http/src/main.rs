@@ -8,7 +8,12 @@ struct Static;
 const NOT_FOUND: &[u8] = include_bytes!("../404.html");
 
 fn main() {
-    huntsman::run(Static, huntsman::Options::default()).unwrap()
+    huntsman::run(
+        Static,
+        huntsman::Options::default(),
+        huntsman_http::HTTPOptions::default(),
+    )
+    .unwrap()
 }
 
 impl huntsman::App for Static {
@@ -16,8 +21,8 @@ impl huntsman::App for Static {
 
     type Client = SocketAddr;
 
-    fn on_server_start(self: &Arc<Self>, address: SocketAddr) {
-        println!("Server listening on {}", address);
+    fn on_server_start(self: &Arc<Self>, address: &[SocketAddr]) {
+        println!("Server listening on {}", address[0]);
     }
 
     fn handle_request<'a>(
