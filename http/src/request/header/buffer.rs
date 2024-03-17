@@ -76,6 +76,18 @@ impl HTTPHeaderBuffer {
         self.index = 0;
     }
 
+    /// Copies the remaining bytes in this buffer into `buffer`
+    pub(super) fn copy_body(&mut self, buffer: &mut [u8]) -> usize {
+        let remaining = self.length - self.index;
+
+        let copy_length = remaining.min(buffer.len());
+        (&mut buffer[..copy_length])
+            .copy_from_slice(&mut self.buffer[self.index..self.index + copy_length]);
+        self.index += copy_length;
+
+        copy_length
+    }
+
     /// Extend the buffer by reading from `stream`
     fn read(&mut self, stream: &mut TcpStream) -> Result<(), HTTPParseError> {
         assert_ne!(self.length, self.buffer.len());

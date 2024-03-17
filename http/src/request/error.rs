@@ -18,6 +18,12 @@ pub enum HTTPParseError {
     /// The request contains an invalid field
     InvalidField,
 
+    /// The "Content-Length" field of the request doesn't contain a number
+    InvalidContentLength,
+
+    /// The request body is too large
+    BodyTooLarge,
+
     /// An I/O error occurred while parsing a request
     IO(std::io::Error),
 }
@@ -32,7 +38,9 @@ impl std::error::Error for HTTPParseError {
             | HTTPParseError::IncompleteHeader
             | HTTPParseError::InvalidTarget
             | HTTPParseError::InvalidVersion
-            | HTTPParseError::InvalidField => None,
+            | HTTPParseError::InvalidField
+            | HTTPParseError::InvalidContentLength
+            | HTTPParseError::BodyTooLarge => None,
         }
     }
 }
@@ -46,6 +54,8 @@ impl std::fmt::Display for HTTPParseError {
             HTTPParseError::InvalidTarget => write!(f, "invalid target"),
             HTTPParseError::InvalidVersion => write!(f, "invalid version"),
             HTTPParseError::InvalidField => write!(f, "invalid field"),
+            HTTPParseError::InvalidContentLength => write!(f, "invalid content length"),
+            HTTPParseError::BodyTooLarge => write!(f, "request body too large"),
 
             HTTPParseError::IO(error) => write!(
                 f,

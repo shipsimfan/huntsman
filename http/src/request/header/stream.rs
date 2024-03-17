@@ -144,4 +144,17 @@ impl<'a, 'b> Stream<'a, 'b> {
     pub(super) fn collect_until_newline(&mut self) -> Result<&'a [u8], HTTPParseError> {
         self.collect_until_double(b'\r', b'\n')
     }
+
+    /// Creates a buffer for the body, copies any data currently in the header buffer for the body,
+    /// and returns the body buffer and the number of bytes copied.
+    pub(in crate::request) fn body(
+        self,
+        content_length: usize,
+    ) -> (&'b mut TcpStream, Box<[u8]>, usize) {
+        let mut buffer = vec![0; content_length].into_boxed_slice();
+
+        let length = self.buffer.copy_body(&mut buffer);
+
+        (self.stream, buffer, length)
+    }
 }

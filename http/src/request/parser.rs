@@ -24,8 +24,8 @@ impl RequestParser for HTTPRequestParser {
     }
 
     fn parse<'a>(&'a mut self, client: &mut TcpStream) -> Result<HTTPRequest<'a>, HTTPParseError> {
-        let mut stream = Stream::new(&mut self.buffer, client);
+        let stream = Stream::new(&mut self.buffer, client);
 
-        HTTPRequest::parse(&mut stream)
+        HTTPRequest::parse(stream)
     }
 }

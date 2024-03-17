@@ -34,6 +34,9 @@ impl huntsman::App for Static {
         for field in request.fields() {
             println!("  {}", field);
         }
+        if request.body().len() > 0 {
+            println!("{}", String::from_utf8_lossy(request.body()));
+        }
         println!();
 
         let mut response = HTTPResponse::new(HTTPStatus::NotFound, NOT_FOUND);
