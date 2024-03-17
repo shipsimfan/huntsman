@@ -1,17 +1,12 @@
-use crate::HTTPParseError;
+use crate::{HTTPParseError, Stream};
 
-mod buffer;
 mod field;
 mod method;
-mod stream;
 mod target;
 
 pub use field::HTTPRequestField;
 pub use method::HTTPMethod;
 pub use target::HTTPTarget;
-
-pub(super) use buffer::HTTPHeaderBuffer;
-pub(super) use stream::Stream;
 
 /// The header of an HTTP request
 #[derive(Debug)]

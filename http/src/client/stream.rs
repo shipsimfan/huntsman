@@ -1,39 +1,36 @@
-use super::HTTPHeaderBuffer;
+use super::HeaderBuffer;
 use crate::HTTPParseError;
 use std::net::TcpStream;
 
 /// A stream of bytes from a [`TcpStream`]
-pub(in crate::request) struct Stream<'a, 'b> {
+pub(crate) struct Stream<'a, 'b> {
     /// The buffer to improve read efficiency
-    buffer: &'a mut HTTPHeaderBuffer,
+    buffer: &'a mut HeaderBuffer,
 
     /// The stream to read from
-    stream: &'b mut TcpStream,
+    socket: &'b mut TcpStream,
 }
 
 impl<'a, 'b> Stream<'a, 'b> {
     /// Creates a new [`Stream`]
-    pub(in crate::request) fn new(
-        buffer: &'a mut HTTPHeaderBuffer,
-        stream: &'b mut TcpStream,
-    ) -> Self {
+    pub(crate) fn new(buffer: &'a mut HeaderBuffer, socket: &'b mut TcpStream) -> Self {
         buffer.reset();
 
-        Stream { buffer, stream }
+        Stream { buffer, socket }
     }
 
     /// Reads the next value from the stream without consuming it
-    pub(super) fn peek(&mut self) -> Result<u8, HTTPParseError> {
-        self.buffer.peek(self.stream)
+    pub(crate) fn peek(&mut self) -> Result<u8, HTTPParseError> {
+        self.buffer.peek(self.socket)
     }
 
-    pub(super) fn next(&mut self) -> Result<u8, HTTPParseError> {
-        self.buffer.next(self.stream)
+    pub(crate) fn next(&mut self) -> Result<u8, HTTPParseError> {
+        self.buffer.next(self.socket)
     }
 
     /// Skips any whitespace (space or tab) characters in the stream until reaching a
     /// non-whitespace character
-    pub(super) fn skip_whitespace(&mut self) -> Result<(), HTTPParseError> {
+    pub(crate) fn skip_whitespace(&mut self) -> Result<(), HTTPParseError> {
         loop {
             match self.peek()? {
                 b' ' | b'\t' => self.next()?,
@@ -56,7 +53,7 @@ impl<'a, 'b> Stream<'a, 'b> {
     ///
     /// If the end of the buffer is reached before the `predicate` returns true, the function will
     /// return an [`HTTPParseError::HeadersTooLong`]
-    pub(super) fn collect_until_predicate_double<F: Fn(u8, u8) -> bool>(
+    pub(crate) fn collect_until_predicate_double<F: Fn(u8, u8) -> bool>(
         &mut self,
         predicate: F,
     ) -> Result<&'a [u8], HTTPParseError> {
@@ -81,7 +78,7 @@ impl<'a, 'b> Stream<'a, 'b> {
     ///
     /// If the end of the buffer is reached before the `predicate` returns true, the function will
     /// return an [`HTTPParseError::HeadersTooLong`]
-    pub(super) fn collect_until_predicate_error<F: Fn(u8) -> Result<bool, HTTPParseError>>(
+    pub(crate) fn collect_until_predicate_error<F: Fn(u8) -> Result<bool, HTTPParseError>>(
         &mut self,
         predicate: F,
     ) -> Result<&'a [u8], HTTPParseError> {
@@ -100,7 +97,7 @@ impl<'a, 'b> Stream<'a, 'b> {
     ///
     /// If the end of the buffer is reached before the `predicate` returns true, the function will
     /// return an [`HTTPParseError::HeadersTooLong`]
-    pub(super) fn collect_until_predicate<F: Fn(u8) -> bool>(
+    pub(crate) fn collect_until_predicate<F: Fn(u8) -> bool>(
         &mut self,
         predicate: F,
     ) -> Result<&'a [u8], HTTPParseError> {
@@ -114,7 +111,7 @@ impl<'a, 'b> Stream<'a, 'b> {
     ///
     /// If the end of the buffer is reached before a `c` byte is encountered, the function will
     /// return an [`HTTPParseError::HeadersTooLong`]
-    pub(super) fn collect_until(&mut self, c: u8) -> Result<&'a [u8], HTTPParseError> {
+    pub(crate) fn collect_until(&mut self, c: u8) -> Result<&'a [u8], HTTPParseError> {
         self.collect_until_predicate(|value| c == value)
     }
 
@@ -125,7 +122,7 @@ impl<'a, 'b> Stream<'a, 'b> {
     ///
     /// If the end of the buffer is reached before the pattern is matched, the function will return
     /// an [`HTTPParseError::HeadersTooLong`]
-    pub(super) fn collect_until_double(
+    pub(crate) fn collect_until_double(
         &mut self,
         a: u8,
         b: u8,
@@ -141,20 +138,17 @@ impl<'a, 'b> Stream<'a, 'b> {
     ///
     /// If the end of the buffer is reached before a newline is found, the function will return an
     /// [`HTTPParseError::HeadersTooLong`]
-    pub(super) fn collect_until_newline(&mut self) -> Result<&'a [u8], HTTPParseError> {
+    pub(crate) fn collect_until_newline(&mut self) -> Result<&'a [u8], HTTPParseError> {
         self.collect_until_double(b'\r', b'\n')
     }
 
     /// Creates a buffer for the body, copies any data currently in the header buffer for the body,
     /// and returns the body buffer and the number of bytes copied.
-    pub(in crate::request) fn body(
-        self,
-        content_length: usize,
-    ) -> (&'b mut TcpStream, Box<[u8]>, usize) {
+    pub(crate) fn body(self, content_length: usize) -> (&'b mut TcpStream, Box<[u8]>, usize) {
         let mut buffer = vec![0; content_length].into_boxed_slice();
 
         let length = self.buffer.copy_body(&mut buffer);
 
-        (self.stream, buffer, length)
+        (self.socket, buffer, length)
     }
 }

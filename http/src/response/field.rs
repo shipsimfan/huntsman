@@ -42,10 +42,10 @@ impl HTTPResponseField {
     }
 
     /// Writes this field onto `stream`
-    pub(super) fn write(&self, stream: &mut TcpStream) -> Result<(), std::io::Error> {
-        stream.write_all(&self.name)?;
-        stream.write_all(b": ")?;
-        stream.write_all(&self.value)?;
-        stream.write_all(b"\r\n")
+    pub(super) fn write(&self, socket: &mut TcpStream) -> Result<(), std::io::Error> {
+        socket.write_all(&self.name)?;
+        socket.write_all(b": ")?;
+        socket.write_all(&self.value)?;
+        socket.write_all(b"\r\n")
     }
 }

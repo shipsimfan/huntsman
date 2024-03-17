@@ -1,14 +1,11 @@
+use crate::Stream;
 use std::{io::Read, ops::Deref};
-
-use header::{HTTPHeaderBuffer, Stream};
 
 mod error;
 mod header;
-mod parser;
 
 pub use error::HTTPParseError;
 pub use header::{HTTPMethod, HTTPRequestHeader};
-pub use parser::HTTPRequestParser;
 
 /// An HTTP request received from a client
 #[derive(Debug)]
@@ -19,9 +16,6 @@ pub struct HTTPRequest<'a> {
     /// The body of the request
     body: Box<[u8]>,
 }
-
-/// The maximum size of a request body
-const MAX_BODY_SIZE: usize = 1024 * 1024;
 
 /// Parse the `content_length` into a [`usize`]
 fn parse_content_length(content_length: &[u8]) -> Result<usize, HTTPParseError> {
@@ -41,14 +35,17 @@ fn parse_content_length(content_length: &[u8]) -> Result<usize, HTTPParseError> 
 
 impl<'a> HTTPRequest<'a> {
     /// Attempts to parse an [`HTTPRequest`] from `stream`
-    pub(self) fn parse(mut stream: Stream<'a, '_>) -> Result<Self, HTTPParseError> {
+    pub(crate) fn parse(
+        mut stream: Stream<'a, '_>,
+        max_body_size: usize,
+    ) -> Result<Self, HTTPParseError> {
         let header = HTTPRequestHeader::parse(&mut stream)?;
 
         let mut body = Vec::new().into_boxed_slice();
         if let Some(content_length) = header.field(b"Content-Length") {
             let content_length = parse_content_length(content_length.value())?;
 
-            if content_length > MAX_BODY_SIZE {
+            if content_length > max_body_size {
                 return Err(HTTPParseError::BodyTooLarge);
             }
 

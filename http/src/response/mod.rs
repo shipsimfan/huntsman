@@ -1,4 +1,3 @@
-use huntsman::Response;
 use name::SERVER;
 use std::{borrow::Cow, io::Write, net::TcpStream};
 
@@ -67,28 +66,25 @@ impl HTTPResponse {
     pub fn set_body<T: Into<Cow<'static, [u8]>>>(&mut self, body: T) {
         self.body = body.into();
     }
-}
 
-impl Response for HTTPResponse {
-    type Client = TcpStream;
-
-    fn send(self, transport: &mut TcpStream) -> Result<(), std::io::Error> {
-        transport.write_all(b"HTTP/1.1 ")?;
-        transport.write_all(&self.status.code_bytes())?;
-        transport.write_all(b" ")?;
-        transport.write_all(self.status.message().as_bytes())?;
-        transport.write_all(b"\r\nContent-Length: ")?;
-        write!(transport, "{}", self.body.len())?;
-        transport.write_all(b"\r\n")?;
+    /// Writes this response to `socket`
+    pub(super) fn send(&self, socket: &mut TcpStream) -> Result<(), std::io::Error> {
+        socket.write_all(b"HTTP/1.1 ")?;
+        socket.write_all(&self.status.code_bytes())?;
+        socket.write_all(b" ")?;
+        socket.write_all(self.status.message().as_bytes())?;
+        socket.write_all(b"\r\nContent-Length: ")?;
+        write!(socket, "{}", self.body.len())?;
+        socket.write_all(b"\r\n")?;
 
         for field in &self.fields {
-            field.write(transport)?;
+            field.write(socket)?;
         }
-        transport.write_all(b"\r\n")?;
+        socket.write_all(b"\r\n")?;
 
-        transport.write_all(&self.body)?;
+        socket.write_all(&self.body)?;
 
-        transport.flush()
+        socket.flush()
     }
 }
 
