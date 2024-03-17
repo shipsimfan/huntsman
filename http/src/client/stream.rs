@@ -13,7 +13,7 @@ pub(crate) struct Stream<'a, 'b> {
 
 impl<'a, 'b> Stream<'a, 'b> {
     /// Creates a new [`Stream`]
-    pub(crate) fn new(buffer: &'a mut HeaderBuffer, socket: &'b mut TcpStream) -> Self {
+    pub(super) fn new(buffer: &'a mut HeaderBuffer, socket: &'b mut TcpStream) -> Self {
         buffer.reset();
 
         Stream { buffer, socket }
