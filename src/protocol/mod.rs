@@ -5,7 +5,7 @@ use std::future::Future;
 pub use client::ProtocolClient;
 
 /// A protocol which huntsman can run a server for
-pub trait Protocol: 'static + Sized {
+pub trait Protocol: 'static + Sized + Send + Sync {
     /// Options to configure this protocol
     type Options;
 

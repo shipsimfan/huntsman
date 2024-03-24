@@ -2,6 +2,7 @@ use crate::StartError;
 use std::{num::NonZeroUsize, sync::Arc};
 
 mod options;
+mod worker;
 
 pub use options::Options;
 
@@ -27,7 +28,7 @@ pub async fn async_run<Protocol: crate::Protocol, App: crate::App<Protocol = Pro
     mut huntsman_options: Options<Protocol>,
     protocol_options: Protocol::Options,
 ) -> Result<(), StartError<Protocol>> {
-    // Prepare addresses and app
+    // Prepare addresses and shared values
     let addresses = huntsman_options.addresses();
     let app = Arc::new(app);
 
@@ -42,9 +43,20 @@ pub async fn async_run<Protocol: crate::Protocol, App: crate::App<Protocol = Pro
         real_addresses.push(listener.address().await);
         listeners.push(listener);
     }
+    let listeners = Arc::new(listeners);
 
     // Signal the server start
     app.on_server_start(&real_addresses).await;
 
-    todo!("Create workers");
+    // Create workers
+    let connections_per_worker = huntsman_options.connections_per_worker();
+    for i in 0..huntsman_options.workers().get() - 1 {
+        let child_listeners = listeners.clone();
+
+        std::thread::Builder::new()
+            .name(format!("worker {}", i + 1))
+            .spawn(move || worker::run(child_listeners, connections_per_worker))?;
+    }
+
+    worker::async_run(listeners, connections_per_worker).await
 }
