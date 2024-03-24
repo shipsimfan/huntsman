@@ -1,5 +1,7 @@
 mod client;
 
+use std::future::Future;
+
 pub use client::ProtocolClient;
 
 /// A protocol which huntsman can run a server for
@@ -8,7 +10,10 @@ pub trait Protocol: 'static + Sized {
     type Options;
 
     /// The address of a connecting client
-    type Address: Send;
+    type ClientAddress: Send;
+
+    /// The address of a listening socket
+    type ListenAddress: Send + Default;
 
     /// Parser for requests from a client
     type Request<'a>;
@@ -33,12 +38,17 @@ pub trait Protocol: 'static + Sized {
         SendError = Self::SendError,
     >;
 
-    /// Create a new listen socket with `options`
-    fn start(options: Self::Options) -> Result<Self, Self::ListenError>;
+    /// Create a new socket listening on `address` with `options`
+    fn start(
+        address: Self::ListenAddress,
+        options: &Self::Options,
+    ) -> impl Future<Output = Result<Self, Self::ListenError>>;
 
-    /// Get the addresses this socket is bound too
-    fn get_addresses(&mut self) -> &[Self::Address];
+    /// Get the addresses this listen socket is bound too
+    fn address(&mut self) -> impl Future<Output = Self::ListenAddress>;
 
     /// Accept a new client on this socket
-    fn accept(&mut self) -> Result<(Self::Client, Self::Address), Self::ListenError>;
+    fn accept(
+        &mut self,
+    ) -> impl Future<Output = Result<(Self::Client, Self::ClientAddress), Self::ListenError>>;
 }

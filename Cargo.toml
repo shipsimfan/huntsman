@@ -11,6 +11,9 @@ repository = "https://github.com/shipsimfan/huntsman.git"
 license = "GPL-3.0-or-later"
 publish = false
 
+[workspace.dependencies]
+lasync.git = "https://github.com/shipsimfan/lib-lasync"
+
 [package]
 name = "huntsman"
 version.workspace = true
@@ -21,3 +24,6 @@ edition.workspace = true
 repository.workspace = true
 license.workspace = true
 publish.workspace = true
+
+[dependencies]
+lasync.workspace = true

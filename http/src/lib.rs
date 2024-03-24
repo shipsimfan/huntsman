@@ -38,7 +38,7 @@ pub struct HTTP {
 impl Protocol for HTTP {
     type Options = HTTPOptions;
 
-    type Address = SocketAddr;
+    type ClientAddress = SocketAddr;
 
     type Request<'a> = HTTPRequest<'a>;
 
@@ -63,11 +63,11 @@ impl Protocol for HTTP {
         })
     }
 
-    fn get_addresses(&mut self) -> &[Self::Address] {
+    fn get_addresses(&mut self) -> &[Self::ClientAddress] {
         &self.address
     }
 
-    fn accept(&mut self) -> Result<(Self::Client, Self::Address), Self::ListenError> {
+    fn accept(&mut self) -> Result<(Self::Client, Self::ClientAddress), Self::ListenError> {
         self.listener.accept().map(|(socket, address)| {
             (
                 HTTPClient::new(socket, self.max_header_size, self.max_body_size),

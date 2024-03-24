@@ -1,68 +1,64 @@
 use std::num::NonZeroUsize;
 
 /// The settings for the huntsman server
-pub struct Options {
-    /// The maximum number of connections
-    max_connections: NonZeroUsize,
+pub struct Options<Protocol: crate::Protocol> {
+    /// The number of workers to handle connections
+    workers: Option<NonZeroUsize>,
 
-    /// The initial number of workers to spawn
-    initial_workers: NonZeroUsize,
+    /// The maximum number of connections a single worker can handle
+    connections_per_worker: NonZeroUsize,
 
-    /// The minimum number of spare workers to keep in the pool
-    min_spare_workers: usize,
-
-    /// The maximum number of spare workers to keep in the pool
-    max_spare_workers: Option<usize>,
+    /// The addresses to listen for connections on
+    addresses: Vec<Protocol::ListenAddress>,
 }
 
-impl Options {
-    /// Gets the maximum number of connections
-    pub fn max_connections(&self) -> NonZeroUsize {
-        self.max_connections
+impl<Protocol: crate::Protocol> Options<Protocol> {
+    /// Gets the number of workers to handle connections
+    pub fn workers(&self) -> NonZeroUsize {
+        self.workers.unwrap_or_else(|| {
+            std::thread::available_parallelism().unwrap_or(NonZeroUsize::new(1).unwrap())
+        })
     }
 
-    /// Gets the initial number of workers to spawn
-    pub fn initial_workers(&self) -> NonZeroUsize {
-        self.initial_workers.max(
-            NonZeroUsize::new(self.min_spare_workers()).unwrap_or(NonZeroUsize::new(1).unwrap()),
-        )
+    /// Gets the maximum number of connections a single worker can handle
+    pub fn connections_per_worker(&self) -> NonZeroUsize {
+        self.connections_per_worker
     }
 
-    /// Gets the minimum number of spare workers to keep around for connections
-    pub fn min_spare_workers(&self) -> usize {
-        self.min_spare_workers.min(self.max_connections.get() - 1)
+    /// Sets the number of workers to handle connections
+    pub fn set_workers(&mut self, workers: NonZeroUsize) {
+        self.workers = Some(workers);
     }
 
-    /// Gets the maximum number of spare workers to keep around for connections
-    pub fn max_spare_workers(&self) -> usize {
-        self.max_spare_workers
-            .unwrap_or((self.max_connections.get() + 1) / 2)
-            .max(self.min_spare_workers())
+    /// Sets the maximum connections a single worker can handle
+    pub fn set_connections_per_worker(&mut self, connections_per_worker: NonZeroUsize) {
+        self.connections_per_worker = connections_per_worker;
     }
 
-    /// Sets the maximum connections a worker can handle
-    pub fn set_max_connections(&mut self, max_connections: NonZeroUsize) {
-        self.max_connections = max_connections;
+    /// Adds an address to listen for connections on
+    pub fn push_address(&mut self, address: Protocol::ListenAddress) {
+        self.addresses.push(address)
     }
 
-    /// Sets the number of initial workers to handle connections
-    pub fn set_initial_workers(&mut self, initial_workers: NonZeroUsize) {
-        self.initial_workers = initial_workers;
-    }
+    /// Gets the address to listen for connections on
+    pub(super) fn addresses(&mut self) -> Vec<Protocol::ListenAddress> {
+        let mut addresses = Vec::new();
+        std::mem::swap(&mut addresses, &mut self.addresses);
 
-    /// Sets the maximum number of spare workers to handle connections
-    pub fn set_max_spare_workers(&mut self, max_spare_workers: usize) {
-        self.max_spare_workers = Some(max_spare_workers);
+        if addresses.len() == 0 {
+            addresses.push(Protocol::ListenAddress::default());
+        }
+
+        addresses
     }
 }
 
-impl Default for Options {
+impl<Protocol: crate::Protocol> Default for Options<Protocol> {
     fn default() -> Self {
         Options {
-            max_connections: NonZeroUsize::new(256).unwrap(),
-            initial_workers: NonZeroUsize::new(32).unwrap(),
-            min_spare_workers: 16,
-            max_spare_workers: None,
+            workers: None,
+            connections_per_worker: NonZeroUsize::new(64).unwrap(),
+            addresses: Vec::new(),
         }
     }
 }

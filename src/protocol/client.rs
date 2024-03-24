@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, future::Future};
 
 /// A client connection
 pub trait ProtocolClient: 'static + Sized + Send {
@@ -15,8 +15,11 @@ pub trait ProtocolClient: 'static + Sized + Send {
     type Response;
 
     /// Attempt to read and parse the next request from the client
-    fn read<'a>(&'a mut self) -> Result<Self::Request<'a>, Self::ReadError>;
+    fn read<'a>(&'a mut self) -> impl Future<Output = Result<Self::Request<'a>, Self::ReadError>>;
 
     /// Send this response on `transport`
-    fn send(&mut self, response: Self::Response) -> Result<(), Self::SendError>;
+    fn send(
+        &mut self,
+        response: Self::Response,
+    ) -> impl Future<Output = Result<(), Self::SendError>>;
 }

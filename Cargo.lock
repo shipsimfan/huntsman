@@ -3,8 +3,81 @@
 version = 3
 
 [[package]]
+name = "executor"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-lasync#002206ca651dbb5ef4869ef095fe01ec955bc268"
+dependencies = [
+ "executor-common",
+ "executor-linux",
+ "executor-windows",
+]
+
+[[package]]
+name = "executor-common"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-lasync#002206ca651dbb5ef4869ef095fe01ec955bc268"
+
+[[package]]
+name = "executor-linux"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-lasync#002206ca651dbb5ef4869ef095fe01ec955bc268"
+dependencies = [
+ "executor-common",
+ "linux",
+ "uring",
+]
+
+[[package]]
+name = "executor-windows"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-lasync#002206ca651dbb5ef4869ef095fe01ec955bc268"
+dependencies = [
+ "executor-common",
+ "win32",
+]
+
+[[package]]
+name = "futures"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-lasync#002206ca651dbb5ef4869ef095fe01ec955bc268"
+dependencies = [
+ "futures-common",
+ "futures-linux",
+ "futures-windows",
+]
+
+[[package]]
+name = "futures-common"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-lasync#002206ca651dbb5ef4869ef095fe01ec955bc268"
+
+[[package]]
+name = "futures-linux"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-lasync#002206ca651dbb5ef4869ef095fe01ec955bc268"
+dependencies = [
+ "executor",
+ "futures-common",
+ "linux",
+ "uring",
+]
+
+[[package]]
+name = "futures-windows"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-lasync#002206ca651dbb5ef4869ef095fe01ec955bc268"
+dependencies = [
+ "executor",
+ "futures-common",
+ "win32",
+]
+
+[[package]]
 name = "huntsman"
 version = "0.1.0"
+dependencies = [
+ "lasync",
+]
 
 [[package]]
 name = "huntsman-http"
@@ -20,3 +93,30 @@ dependencies = [
  "huntsman",
  "huntsman-http",
 ]
+
+[[package]]
+name = "lasync"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-lasync#002206ca651dbb5ef4869ef095fe01ec955bc268"
+dependencies = [
+ "executor",
+ "futures",
+]
+
+[[package]]
+name = "linux"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-linux#8b4fcbbca572919149ee9355451149129248052e"
+
+[[package]]
+name = "uring"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-uring#0405f4e0a3ec110f1c4fab5936785e6b5fd38715"
+dependencies = [
+ "linux",
+]
+
+[[package]]
+name = "win32"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-win32#d4a9825f703973e96666d6994f8321744e0c7d86"
