@@ -1,4 +1,5 @@
 use client::handle_client;
+use connections::Connections;
 use lasync::executor::FutureQueue;
 use std::{num::NonZeroUsize, sync::Arc};
 

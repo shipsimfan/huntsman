@@ -1,4 +1,5 @@
-use super::connections::Connections;
+use super::Connections;
+use crate::ProtocolClient;
 use std::{rc::Rc, sync::Arc};
 
 /// A function which handles a client until an error occurs or a client disconnects
@@ -8,8 +9,27 @@ pub(super) async fn handle_client<
 >(
     app: Arc<App>,
     connections: Rc<Connections>,
-    client: App::Client,
-    client_socket: Protocol::Client,
+    mut client: App::Client,
+    mut client_socket: Protocol::Client,
 ) {
-    todo!("handle_client()");
+    let mut response = None;
+
+    loop {
+        let request = match client_socket.read().await {
+            Ok(request) => request,
+            Err(error) => {
+                response = app.read_error(&mut client, error).await;
+                break;
+            }
+        };
+    }
+
+    if let Some(response) = response {
+        if let Err(error) = client_socket.send(response).await {
+            app.send_error(&mut client, error).await;
+        }
+    }
+
+    connections.end_connection();
+    app.on_client_disconnect(&mut client).await;
 }

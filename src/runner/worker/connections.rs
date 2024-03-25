@@ -36,4 +36,11 @@ impl Connections {
         assert!(*count < self.max_connections);
         *count += 1;
     }
+
+    /// Signals a connection has ended
+    pub(super) fn end_connection(&self) {
+        let mut count = self.count.borrow_mut();
+        *count -= 1;
+        self.notify.notify_all();
+    }
 }

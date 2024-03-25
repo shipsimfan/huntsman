@@ -1,4 +1,4 @@
-use super::connections::Connections;
+use super::Connections;
 use lasync::executor::FutureQueue;
 use std::{num::NonZeroUsize, sync::Arc};
 
