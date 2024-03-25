@@ -22,6 +22,13 @@ pub(super) async fn handle_client<
                 break;
             }
         };
+
+        let response = app.handle_request(&mut client, request).await;
+
+        if let Err(error) = client_socket.send(response).await {
+            app.send_error(&mut client, error).await;
+            break;
+        }
     }
 
     if let Some(response) = response {
