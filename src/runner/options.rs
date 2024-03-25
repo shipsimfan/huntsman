@@ -8,8 +8,8 @@ pub struct Options<Protocol: crate::Protocol> {
     /// The maximum number of connections a single worker can handle
     connections_per_worker: NonZeroUsize,
 
-    /// The addresses to listen for connections on
-    addresses: Vec<Protocol::ListenAddress>,
+    /// The address to listen for connections on
+    address: Protocol::ListenAddress,
 }
 
 impl<Protocol: crate::Protocol> Options<Protocol> {
@@ -25,6 +25,11 @@ impl<Protocol: crate::Protocol> Options<Protocol> {
         self.connections_per_worker
     }
 
+    /// Gets the address to listen for connections on
+    pub fn address(&self) -> &Protocol::ListenAddress {
+        &self.address
+    }
+
     /// Sets the number of workers to handle connections
     pub fn set_workers(&mut self, workers: NonZeroUsize) {
         self.workers = Some(workers);
@@ -35,21 +40,9 @@ impl<Protocol: crate::Protocol> Options<Protocol> {
         self.connections_per_worker = connections_per_worker;
     }
 
-    /// Adds an address to listen for connections on
-    pub fn push_address(&mut self, address: Protocol::ListenAddress) {
-        self.addresses.push(address)
-    }
-
-    /// Gets the address to listen for connections on
-    pub(super) fn addresses(&mut self) -> Vec<Protocol::ListenAddress> {
-        let mut addresses = Vec::new();
-        std::mem::swap(&mut addresses, &mut self.addresses);
-
-        if addresses.len() == 0 {
-            addresses.push(Protocol::ListenAddress::default());
-        }
-
-        addresses
+    /// Sets the address to listen for connection on
+    pub fn set_address(&mut self, address: Protocol::ListenAddress) {
+        self.address = address;
     }
 }
 
@@ -58,7 +51,7 @@ impl<Protocol: crate::Protocol> Default for Options<Protocol> {
         Options {
             workers: None,
             connections_per_worker: NonZeroUsize::new(64).unwrap(),
-            addresses: Vec::new(),
+            address: Protocol::ListenAddress::default(),
         }
     }
 }

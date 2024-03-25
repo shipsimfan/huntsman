@@ -40,8 +40,8 @@ pub trait Protocol: 'static + Sized + Send + Sync {
 
     /// Create a new socket listening on `address` with `options`
     fn start(
-        address: Self::ListenAddress,
-        options: &Self::Options,
+        address: &Self::ListenAddress,
+        options: Self::Options,
     ) -> impl Future<Output = Result<Self, Self::ListenError>>;
 
     /// Get the addresses this listen socket is bound too
@@ -49,6 +49,6 @@ pub trait Protocol: 'static + Sized + Send + Sync {
 
     /// Accept a new client on this socket
     fn accept(
-        &mut self,
+        &self,
     ) -> impl Future<Output = Result<(Self::Client, Self::ClientAddress), Self::ListenError>>;
 }

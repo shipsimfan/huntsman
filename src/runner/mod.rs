@@ -25,38 +25,32 @@ pub fn run<Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>>(
 
 pub async fn async_run<Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>>(
     app: App,
-    mut huntsman_options: Options<Protocol>,
+    huntsman_options: Options<Protocol>,
     protocol_options: Protocol::Options,
 ) -> Result<(), StartError<Protocol>> {
-    // Prepare addresses and shared values
-    let addresses = huntsman_options.addresses();
+    // Create the listener
+    let mut listener = Protocol::start(huntsman_options.address(), protocol_options)
+        .await
+        .map_err(StartError::Protocol)?;
+    let address = listener.address().await;
+
+    // Prepare shared values
     let app = Arc::new(app);
-
-    // Create the listeners
-    let mut listeners = Vec::with_capacity(addresses.len());
-    let mut real_addresses = Vec::with_capacity(addresses.len());
-    for address in addresses {
-        let mut listener = Protocol::start(address, &protocol_options)
-            .await
-            .map_err(StartError::Protocol)?;
-
-        real_addresses.push(listener.address().await);
-        listeners.push(listener);
-    }
-    let listeners = Arc::new(listeners);
+    let listener = Arc::new(listener);
+    let connections_per_worker = huntsman_options.connections_per_worker();
 
     // Signal the server start
-    app.on_server_start(&real_addresses).await;
+    app.on_server_start(address).await;
 
     // Create workers
-    let connections_per_worker = huntsman_options.connections_per_worker();
     for i in 0..huntsman_options.workers().get() - 1 {
-        let child_listeners = listeners.clone();
+        let child_listener = listener.clone();
+        let child_app = app.clone();
 
         std::thread::Builder::new()
             .name(format!("worker {}", i + 1))
-            .spawn(move || worker::run(child_listeners, connections_per_worker))?;
+            .spawn(move || worker::run(child_app, child_listener, connections_per_worker))?;
     }
 
-    worker::async_run(listeners, connections_per_worker).await
+    worker::async_run(app, listener, connections_per_worker).await
 }
