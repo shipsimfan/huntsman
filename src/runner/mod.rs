@@ -1,4 +1,5 @@
 use crate::StartError;
+use lasync::executor::FutureQueue;
 use std::{num::NonZeroUsize, sync::Arc};
 
 mod options;
@@ -16,17 +17,22 @@ pub fn run<Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>>(
 ) -> Result<(), StartError<Protocol>> {
     let mut result = Ok(());
 
-    lasync::executor::run(NUM_EVENTS, async {
-        result = async_run(app, huntsman_options, protocol_options).await;
-    })?;
+    let future_queue = FutureQueue::new();
+    let child_future_queue = future_queue.clone();
+    future_queue.push(async {
+        result = async_run(app, huntsman_options, protocol_options, child_future_queue).await;
+    });
+
+    lasync::executor::run_queue(NUM_EVENTS, future_queue)?;
 
     result
 }
 
-pub async fn async_run<Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>>(
+pub async fn async_run<'a, Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>>(
     app: App,
     huntsman_options: Options<Protocol>,
     protocol_options: Protocol::Options,
+    future_queue: FutureQueue<'a>,
 ) -> Result<(), StartError<Protocol>> {
     // Create the listener
     let mut listener = Protocol::start(huntsman_options.address(), protocol_options)
@@ -52,5 +58,5 @@ pub async fn async_run<Protocol: crate::Protocol, App: crate::App<Protocol = Pro
             .spawn(move || worker::run(child_app, child_listener, connections_per_worker))?;
     }
 
-    worker::async_run(app, listener, connections_per_worker).await
+    worker::accept_clients(app, listener, connections_per_worker, future_queue).await
 }
