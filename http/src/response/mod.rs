@@ -52,7 +52,10 @@ impl HTTPResponse {
 
     /// Writes this response to `socket`
     pub(super) async fn send(mut self, socket: &mut TCPStream) -> Result<()> {
-        self.header.extend_from_slice(b"\r\n");
+        self.header.extend_from_slice(b"Content-Length: ");
+        self.header
+            .extend_from_slice(format!("{}", self.body.len()).as_bytes());
+        self.header.extend_from_slice(b"\r\n\r\n");
 
         socket.write_all(&self.header).await?;
         socket.write_all(&self.body).await
