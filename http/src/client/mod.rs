@@ -1,18 +1,18 @@
+use crate::{HTTPParseError, HTTPRequest, HTTPResponse};
 use buffer::HeaderBuffer;
 use huntsman::ProtocolClient;
-use std::net::TcpStream;
+use lasync::futures::net::TCPStream;
+use std::future::Future;
 
 mod buffer;
 mod stream;
 
 pub(crate) use stream::Stream;
 
-use crate::{HTTPParseError, HTTPRequest, HTTPResponse};
-
 /// A client connected to the server
 pub struct HTTPClient {
     /// The socket representing the underlying connection
-    socket: TcpStream,
+    socket: TCPStream,
 
     /// The buffer for more efficient header reading and parsing
     buffer: HeaderBuffer,
@@ -23,7 +23,7 @@ pub struct HTTPClient {
 
 impl HTTPClient {
     /// Creates a new [`HTTPClient`]
-    pub(crate) fn new(socket: TcpStream, max_header_size: usize, max_body_size: usize) -> Self {
+    pub(crate) fn new(socket: TCPStream, max_header_size: usize, max_body_size: usize) -> Self {
         let buffer = HeaderBuffer::new(max_header_size);
 
         HTTPClient {
@@ -37,19 +37,20 @@ impl HTTPClient {
 impl ProtocolClient for HTTPClient {
     type ReadError = HTTPParseError;
 
-    type SendError = std::io::Error;
+    type SendError = lasync::executor::Error;
 
     type Request<'a> = HTTPRequest<'a>;
 
     type Response = HTTPResponse;
 
-    fn read<'a>(&'a mut self) -> Result<Self::Request<'a>, Self::ReadError> {
-        let stream = Stream::new(&mut self.buffer, &mut self.socket);
-
-        HTTPRequest::parse(stream, self.max_body_size)
+    fn read<'a>(&'a mut self) -> impl Future<Output = Result<Self::Request<'a>, Self::ReadError>> {
+        async { todo!() }
     }
 
-    fn send(&mut self, response: Self::Response) -> Result<(), Self::SendError> {
-        response.send(&mut self.socket)
+    fn send(
+        &mut self,
+        response: Self::Response,
+    ) -> impl Future<Output = Result<(), Self::SendError>> {
+        async { todo!() }
     }
 }

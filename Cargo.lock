@@ -84,6 +84,7 @@ name = "huntsman-http"
 version = "0.1.0"
 dependencies = [
  "huntsman",
+ "lasync",
 ]
 
 [[package]]

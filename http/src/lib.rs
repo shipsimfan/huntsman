@@ -8,14 +8,19 @@
 
 use client::Stream;
 use huntsman::Protocol;
-use std::net::{SocketAddr, TcpListener};
+use listeners::Listeners;
+use std::{future::Future, net::SocketAddr};
 
 mod client;
+mod listen_address;
+mod listeners;
 mod options;
 mod request;
 mod response;
 
 pub use client::HTTPClient;
+pub use lasync::executor::{Error, Result};
+pub use listen_address::ListenAddress;
 pub use options::HTTPOptions;
 pub use request::{HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestHeader};
 pub use response::{HTTPResponse, HTTPResponseField, HTTPStatus};
@@ -23,12 +28,12 @@ pub use response::{HTTPResponse, HTTPResponseField, HTTPStatus};
 /// The HTTP protocol
 pub struct HTTP {
     /// The socket for accepting clients
-    listener: TcpListener,
+    listeners: Listeners,
 
-    /// The address to listen on
-    address: [SocketAddr; 1],
+    /// The addresses the server is listening on
+    listen_address: ListenAddress,
 
-    /// The maximum size for headers in requests
+    /// The maximum size for headers in requests and responses
     max_header_size: usize,
 
     /// The maximum size for bodies in requests
@@ -40,39 +45,47 @@ impl Protocol for HTTP {
 
     type ClientAddress = SocketAddr;
 
+    type ListenAddress = ListenAddress;
+
     type Request<'a> = HTTPRequest<'a>;
 
     type Response = HTTPResponse;
 
-    type ListenError = std::io::Error;
+    type ListenError = lasync::executor::Error;
 
     type ReadError = HTTPParseError;
 
-    type SendError = std::io::Error;
+    type SendError = lasync::executor::Error;
 
     type Client = HTTPClient;
 
-    fn start(options: Self::Options) -> Result<Self, Self::ListenError> {
-        let listener = TcpListener::bind(options.address)?;
+    fn start(
+        address: &Self::ListenAddress,
+        options: Self::Options,
+    ) -> impl Future<Output = Result<Self>> {
+        async move {
+            let listeners = Listeners::new(address.clone())?;
 
-        Ok(HTTP {
-            listener,
-            address: [options.address],
-            max_header_size: options.max_header_size,
-            max_body_size: options.max_body_size,
-        })
+            Ok(HTTP {
+                listeners,
+                listen_address: address.clone(),
+                max_header_size: options.max_header_size,
+                max_body_size: options.max_body_size,
+            })
+        }
     }
 
-    fn get_addresses(&mut self) -> &[Self::ClientAddress] {
-        &self.address
+    fn address(&mut self) -> impl std::future::Future<Output = Self::ListenAddress> {
+        async { self.listen_address.clone() }
     }
 
-    fn accept(&mut self) -> Result<(Self::Client, Self::ClientAddress), Self::ListenError> {
-        self.listener.accept().map(|(socket, address)| {
-            (
-                HTTPClient::new(socket, self.max_header_size, self.max_body_size),
-                address,
-            )
-        })
+    fn accept(&self) -> impl Future<Output = Result<(Self::Client, Self::ClientAddress)>> {
+        async {
+            let (socket, address) = self.listeners.accept().await?;
+
+            let client = HTTPClient::new(socket, self.max_header_size, self.max_body_size);
+
+            Ok((client, address))
+        }
     }
 }

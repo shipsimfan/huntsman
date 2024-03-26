@@ -11,3 +11,4 @@ publish.workspace = true
 
 [dependencies]
 huntsman.path = ".."
+lasync.workspace = true
