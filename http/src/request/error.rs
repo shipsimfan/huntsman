@@ -25,7 +25,7 @@ pub enum HTTPParseError {
     BodyTooLarge,
 
     /// An I/O error occurred while parsing a request
-    IO(std::io::Error),
+    IO(lasync::executor::Error),
 }
 
 impl std::error::Error for HTTPParseError {
@@ -72,8 +72,8 @@ impl std::fmt::Debug for HTTPParseError {
     }
 }
 
-impl From<std::io::Error> for HTTPParseError {
-    fn from(error: std::io::Error) -> Self {
+impl From<lasync::executor::Error> for HTTPParseError {
+    fn from(error: lasync::executor::Error) -> Self {
         HTTPParseError::IO(error)
     }
 }

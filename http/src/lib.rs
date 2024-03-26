@@ -23,7 +23,7 @@ pub use lasync::executor::{Error, Result};
 pub use listen_address::ListenAddress;
 pub use options::HTTPOptions;
 pub use request::{HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestHeader};
-pub use response::{HTTPResponse, HTTPResponseField, HTTPStatus};
+pub use response::{HTTPResponse, HTTPStatus};
 
 /// The HTTP protocol
 pub struct HTTP {

@@ -1,5 +1,5 @@
 use crate::HTTPParseError;
-use std::{io::Read, net::TcpStream};
+use lasync::futures::{io::Read, net::TCPStream};
 
 /// A buffer for more efficient reading from a socket
 pub(super) struct HeaderBuffer {
@@ -43,21 +43,21 @@ impl HeaderBuffer {
     }
 
     /// Reads the next value from `stream` without consuming it
-    pub(super) fn peek(&mut self, stream: &mut TcpStream) -> Result<u8, HTTPParseError> {
+    pub(super) async fn peek(&mut self, stream: &mut TCPStream) -> Result<u8, HTTPParseError> {
         if self.index == self.buffer.len() {
             return Err(HTTPParseError::HeadersTooLong);
         }
 
         if self.index == self.length {
-            self.read(stream)?;
+            self.read(stream).await?;
         }
 
         Ok(self.buffer[self.index])
     }
 
     /// Gets the next byte from the buffer or reads more bytes from `stream`
-    pub(super) fn next(&mut self, stream: &mut TcpStream) -> Result<u8, HTTPParseError> {
-        let ret = self.peek(stream)?;
+    pub(super) async fn next(&mut self, stream: &mut TCPStream) -> Result<u8, HTTPParseError> {
+        let ret = self.peek(stream).await?;
         self.index += 1;
         Ok(ret)
     }
@@ -89,10 +89,10 @@ impl HeaderBuffer {
     }
 
     /// Extend the buffer by reading from `stream`
-    fn read(&mut self, stream: &mut TcpStream) -> Result<(), HTTPParseError> {
+    async fn read(&mut self, stream: &mut TCPStream) -> Result<(), HTTPParseError> {
         assert_ne!(self.length, self.buffer.len());
 
-        let count = stream.read(&mut self.buffer[self.length..])?;
+        let count = stream.read(&mut self.buffer[self.length..]).await?;
 
         if count == 0 {
             return Err(HTTPParseError::IncompleteHeader);

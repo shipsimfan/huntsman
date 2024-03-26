@@ -44,13 +44,15 @@ impl ProtocolClient for HTTPClient {
     type Response = HTTPResponse;
 
     fn read<'a>(&'a mut self) -> impl Future<Output = Result<Self::Request<'a>, Self::ReadError>> {
-        async { todo!() }
+        let stream = Stream::new(&mut self.buffer, &mut self.socket);
+
+        HTTPRequest::parse(stream, self.max_body_size)
     }
 
     fn send(
         &mut self,
         response: Self::Response,
     ) -> impl Future<Output = Result<(), Self::SendError>> {
-        async { todo!() }
+        response.send(&mut self.socket)
     }
 }

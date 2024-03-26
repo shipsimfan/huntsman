@@ -23,20 +23,20 @@ pub struct HTTPRequestHeader<'a> {
 
 impl<'a> HTTPRequestHeader<'a> {
     /// Attempts to parse an [`HTTPRequestHeader`] from `stream`
-    pub(super) fn parse(stream: &mut Stream<'a, '_>) -> Result<Self, HTTPParseError> {
-        let method = HTTPMethod::parse(stream)?;
+    pub(super) async fn parse(stream: &mut Stream<'a, '_>) -> Result<Self, HTTPParseError> {
+        let method = HTTPMethod::parse(stream).await?;
 
-        let target = HTTPTarget::parse(stream)?;
+        let target = HTTPTarget::parse(stream).await?;
 
-        let version = stream.collect_until_newline()?;
+        let version = stream.collect_until_newline().await?;
         if &version[..version.len() - 2] != b"HTTP/1.1" {
             return Err(HTTPParseError::InvalidVersion);
         }
 
         let mut fields = Vec::new();
         loop {
-            if stream.peek()? == b'\r' {
-                let end = stream.collect_until_newline()?;
+            if stream.peek().await? == b'\r' {
+                let end = stream.collect_until_newline().await?;
                 if end != b"\r\n" {
                     return Err(HTTPParseError::InvalidField);
                 }
@@ -44,7 +44,7 @@ impl<'a> HTTPRequestHeader<'a> {
                 break;
             }
 
-            fields.push(HTTPRequestField::parse(stream)?);
+            fields.push(HTTPRequestField::parse(stream).await?);
         }
 
         Ok(HTTPRequestHeader {

@@ -1,5 +1,6 @@
 use crate::Stream;
-use std::{io::Read, ops::Deref};
+use lasync::futures::io::Read;
+use std::ops::Deref;
 
 mod error;
 mod header;
@@ -35,11 +36,11 @@ fn parse_content_length(content_length: &[u8]) -> Result<usize, HTTPParseError> 
 
 impl<'a> HTTPRequest<'a> {
     /// Attempts to parse an [`HTTPRequest`] from `stream`
-    pub(crate) fn parse(
+    pub(crate) async fn parse(
         mut stream: Stream<'a, '_>,
         max_body_size: usize,
     ) -> Result<Self, HTTPParseError> {
-        let header = HTTPRequestHeader::parse(&mut stream)?;
+        let header = HTTPRequestHeader::parse(&mut stream).await?;
 
         let mut body = Vec::new().into_boxed_slice();
         if let Some(content_length) = header.field(b"Content-Length") {
@@ -52,7 +53,7 @@ impl<'a> HTTPRequest<'a> {
             let (stream, mut buffer, current_length) = stream.body(content_length);
 
             if current_length < buffer.len() {
-                stream.read_exact(&mut buffer[current_length..])?;
+                stream.read_exact(&mut buffer[current_length..]).await?;
             }
 
             body = buffer;

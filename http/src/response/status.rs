@@ -141,17 +141,6 @@ impl HTTPStatus {
         *self as usize
     }
 
-    /// Gets the number for the status as the three character bytes
-    pub fn code_bytes(&self) -> [u8; 3] {
-        let code = self.code();
-
-        [
-            (code / 100) as u8 + b'0',
-            ((code % 100) / 10) as u8 + b'0',
-            (code % 10) as u8 + b'0',
-        ]
-    }
-
     /// Gets the message for a status code
     pub fn message(&self) -> &str {
         match self {
@@ -200,6 +189,11 @@ impl HTTPStatus {
             HTTPStatus::GatewayTimeout => "Gateway Timeout",
             HTTPStatus::HTTPVersionNotSupported => "HTTP Version Not Supported",
         }
+    }
+
+    /// Generates the start of a header
+    pub(super) fn generate(self) -> Vec<u8> {
+        format!("HTTP/1.1 {} {}\r\n", self.code(), self.message()).into_bytes()
     }
 }
 

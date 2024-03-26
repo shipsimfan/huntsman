@@ -1,20 +1,17 @@
+use crate::Result;
+use lasync::futures::{io::Write, net::TCPStream};
 use name::SERVER;
-use std::{borrow::Cow, io::Write, net::TcpStream};
+use std::borrow::Cow;
 
-mod field;
 mod name;
 mod status;
 
-pub use field::HTTPResponseField;
 pub use status::HTTPStatus;
 
 /// An HTTP response to be sent to the client
 pub struct HTTPResponse {
-    /// The status code of this response
-    status: HTTPStatus,
-
-    /// The fields holding metadata about this request
-    fields: Vec<HTTPResponseField>,
+    /// The header of the response
+    header: Vec<u8>,
 
     /// The body of the response
     body: Cow<'static, [u8]>,
@@ -23,26 +20,14 @@ pub struct HTTPResponse {
 impl HTTPResponse {
     /// Creates a new [`HTTPResponse`]
     pub fn new<T: Into<Cow<'static, [u8]>>>(status: HTTPStatus, body: T) -> Self {
-        let fields = vec![HTTPResponseField::new(
-            "Server".as_bytes(),
-            SERVER.as_bytes(),
-        )];
+        let mut header = status.generate();
+
+        header.extend_from_slice(SERVER.as_bytes());
 
         HTTPResponse {
-            status,
-            fields,
+            header,
             body: body.into(),
         }
-    }
-
-    /// Gets the status for this response
-    pub fn status(&self) -> HTTPStatus {
-        self.status
-    }
-
-    /// Gets the fields holding metadata about this response
-    pub fn fields(&self) -> &[HTTPResponseField] {
-        &self.fields
     }
 
     /// Gets the body of this response
@@ -50,16 +35,14 @@ impl HTTPResponse {
         &self.body
     }
 
-    /// Sets the status for this response
-    pub fn set_status(&mut self, status: HTTPStatus) {
-        self.status = status;
-    }
-
     /// Adds a field to the end of the fields for this response
-    pub fn push_field(&mut self, field: HTTPResponseField) {
-        assert_ne!(field.name(), b"Content-Length", "\"Content-Length\" fields cannot be inserted into a response, this is managed by huntsman-http");
+    pub fn push_field(&mut self, name: &[u8], content: &[u8]) {
+        assert_ne!(name, b"Content-Length", "\"Content-Length\" fields cannot be inserted into a response, this is managed by huntsman-http");
 
-        self.fields.push(field);
+        self.header.extend_from_slice(name);
+        self.header.extend_from_slice(b": ");
+        self.header.extend_from_slice(content);
+        self.header.extend_from_slice(b"\r\n");
     }
 
     /// Sets the body of this response
@@ -68,23 +51,11 @@ impl HTTPResponse {
     }
 
     /// Writes this response to `socket`
-    pub(super) fn send(&self, socket: &mut TcpStream) -> Result<(), std::io::Error> {
-        socket.write_all(b"HTTP/1.1 ")?;
-        socket.write_all(&self.status.code_bytes())?;
-        socket.write_all(b" ")?;
-        socket.write_all(self.status.message().as_bytes())?;
-        socket.write_all(b"\r\nContent-Length: ")?;
-        write!(socket, "{}", self.body.len())?;
-        socket.write_all(b"\r\n")?;
+    pub(super) async fn send(mut self, socket: &mut TCPStream) -> Result<()> {
+        self.header.extend_from_slice(b"\r\n");
 
-        for field in &self.fields {
-            field.write(socket)?;
-        }
-        socket.write_all(b"\r\n")?;
-
-        socket.write_all(&self.body)?;
-
-        socket.flush()
+        socket.write_all(&self.header).await?;
+        socket.write_all(&self.body).await
     }
 }
 

@@ -33,14 +33,16 @@ pub struct HTTPTarget<'a>(&'a [u8]);
 
 impl<'a> HTTPTarget<'a> {
     /// Attempts to parse an [`HTTPTarget`] from `stream`
-    pub(super) fn parse(stream: &mut Stream<'a, '_>) -> Result<Self, HTTPParseError> {
-        let uri = stream.collect_until_predicate_error(|c| match c {
-            b' ' => Ok(true),
-            x if x.is_ascii_alphanumeric() => Ok(false),
-            b'!' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' | b'*' | b'+' | b',' | b'-' | b'.'
-            | b'/' | b':' | b';' | b'=' | b'?' | b'@' | b'_' | b'~' => Ok(false),
-            _ => Err(HTTPParseError::InvalidTarget),
-        })?;
+    pub(super) async fn parse(stream: &mut Stream<'a, '_>) -> Result<Self, HTTPParseError> {
+        let uri = stream
+            .collect_until_predicate_error(|c| match c {
+                b' ' => Ok(true),
+                x if x.is_ascii_alphanumeric() => Ok(false),
+                b'!' | b'$' | b'%' | b'&' | b'\'' | b'(' | b')' | b'*' | b'+' | b',' | b'-'
+                | b'.' | b'/' | b':' | b';' | b'=' | b'?' | b'@' | b'_' | b'~' => Ok(false),
+                _ => Err(HTTPParseError::InvalidTarget),
+            })
+            .await?;
 
         Ok(HTTPTarget(&uri[..uri.len() - 1]))
     }

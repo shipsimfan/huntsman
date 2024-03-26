@@ -28,8 +28,8 @@ pub enum HTTPMethod {
 
 impl HTTPMethod {
     /// Attempts to parse an [`HTTPMethod`] from `stream`
-    pub(super) fn parse(stream: &mut Stream) -> Result<Self, HTTPParseError> {
-        let method = stream.collect_until(b' ')?;
+    pub(super) async fn parse<'a, 'b>(stream: &mut Stream<'a, 'b>) -> Result<Self, HTTPParseError> {
+        let method = stream.collect_until(b' ').await?;
 
         Ok(match &method[..method.len() - 1] {
             b"GET" => HTTPMethod::GET,

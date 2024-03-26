@@ -1,7 +1,5 @@
 use huntsman::Protocol;
-use huntsman_http::{
-    HTTPParseError, HTTPResponse, HTTPResponseField, HTTPStatus, ListenAddress, HTTP,
-};
+use huntsman_http::{HTTPParseError, HTTPResponse, HTTPStatus, ListenAddress, HTTP};
 use std::{future::Future, net::SocketAddr, sync::Arc};
 
 struct Static;
@@ -54,10 +52,10 @@ impl huntsman::App for Static {
 
             let mut response = HTTPResponse::new(HTTPStatus::NotFound, NOT_FOUND);
 
-            response.push_field(HTTPResponseField::new(
+            response.push_field(
                 "Content-Type".as_bytes(),
                 "text/html; charset=utf-8".as_bytes(),
-            ));
+            );
 
             response
         }
