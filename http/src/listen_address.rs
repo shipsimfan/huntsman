@@ -15,6 +15,13 @@ pub struct ListenAddress {
     pub http: Option<SocketAddr>,
 }
 
+impl ListenAddress {
+    /// Creates a [`ListenAddress`] with all addresses set to [`None`]
+    pub const fn empty() -> Self {
+        ListenAddress { http: None }
+    }
+}
+
 impl Default for ListenAddress {
     fn default() -> Self {
         ListenAddress {

@@ -64,11 +64,11 @@ impl Protocol for HTTP {
         options: Self::Options,
     ) -> impl Future<Output = Result<Self>> {
         async move {
-            let listeners = Listeners::new(address.clone())?;
+            let (listeners, listen_address) = Listeners::new(address.clone())?;
 
             Ok(HTTP {
                 listeners,
-                listen_address: address.clone(),
+                listen_address,
                 max_header_size: options.max_header_size,
                 max_body_size: options.max_body_size,
             })
