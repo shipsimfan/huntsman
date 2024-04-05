@@ -1,7 +1,7 @@
 use crate::Result;
-use lasync::futures::{io::Write, net::TCPStream};
+use lasync::{io::Write, net::TCPStream, platform::errno::ETIMEDOUT, time::Timeout, Error};
 use name::SERVER;
-use std::borrow::Cow;
+use std::{borrow::Cow, time::Duration};
 
 mod name;
 mod status;
@@ -51,14 +51,25 @@ impl HTTPResponse {
     }
 
     /// Writes this response to `socket`
-    pub(super) async fn send(mut self, socket: &mut TCPStream) -> Result<()> {
+    pub(super) async fn send(
+        mut self,
+        socket: &mut TCPStream,
+        write_timeout: Duration,
+    ) -> Result<()> {
         self.header.extend_from_slice(b"Content-Length: ");
         self.header
             .extend_from_slice(format!("{}", self.body.len()).as_bytes());
         self.header.extend_from_slice(b"\r\n\r\n");
 
-        socket.write_all(&self.header).await?;
-        socket.write_all(&self.body).await
+        Timeout::new(
+            async move {
+                socket.write_all(&self.header).await?;
+                socket.write_all(&self.body).await
+            },
+            write_timeout,
+        )?
+        .await
+        .unwrap_or(Err(Error::new(ETIMEDOUT)))
     }
 }
 

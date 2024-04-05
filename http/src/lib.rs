@@ -9,7 +9,7 @@
 use client::Stream;
 use huntsman::Protocol;
 use listeners::Listeners;
-use std::{future::Future, net::SocketAddr};
+use std::{future::Future, net::SocketAddr, time::Duration};
 
 mod client;
 mod listen_address;
@@ -19,7 +19,7 @@ mod request;
 mod response;
 
 pub use client::HTTPClient;
-pub use lasync::executor::{Error, Result};
+pub use lasync::{Error, Result};
 pub use listen_address::ListenAddress;
 pub use options::HTTPOptions;
 pub use request::{HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestHeader};
@@ -38,6 +38,15 @@ pub struct HTTP {
 
     /// The maximum size for bodies in requests
     max_body_size: usize,
+
+    /// The maximum amount of time allowed between header reads
+    header_read_timeout: Duration,
+
+    /// The maximum amount of time allowed between body reads
+    body_read_timeout: Duration,
+
+    /// The maximum amount of time allowed between writes
+    write_timeout: Duration,
 }
 
 impl Protocol for HTTP {
@@ -51,11 +60,11 @@ impl Protocol for HTTP {
 
     type Response = HTTPResponse;
 
-    type ListenError = lasync::executor::Error;
+    type ListenError = lasync::Error;
 
     type ReadError = HTTPParseError;
 
-    type SendError = lasync::executor::Error;
+    type SendError = lasync::Error;
 
     type Client = HTTPClient;
 
@@ -71,6 +80,9 @@ impl Protocol for HTTP {
                 listen_address,
                 max_header_size: options.max_header_size,
                 max_body_size: options.max_body_size,
+                header_read_timeout: options.header_read_timeout,
+                body_read_timeout: options.body_read_timeout,
+                write_timeout: options.write_timeout,
             })
         }
     }
@@ -83,7 +95,14 @@ impl Protocol for HTTP {
         async {
             let (socket, address) = self.listeners.accept().await?;
 
-            let client = HTTPClient::new(socket, self.max_header_size, self.max_body_size);
+            let client = HTTPClient::new(
+                socket,
+                self.max_header_size,
+                self.max_body_size,
+                self.header_read_timeout,
+                self.body_read_timeout,
+                self.write_timeout,
+            );
 
             Ok((client, address))
         }

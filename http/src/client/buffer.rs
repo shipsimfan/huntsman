@@ -1,5 +1,6 @@
 use crate::HTTPParseError;
-use lasync::futures::{io::Read, net::TCPStream};
+use lasync::{io::Read, net::TCPStream, time::Timeout};
+use std::time::Duration;
 
 /// A buffer for more efficient reading from a socket
 pub(super) struct HeaderBuffer {
@@ -11,17 +12,21 @@ pub(super) struct HeaderBuffer {
 
     /// The index of the next byte to read
     index: usize,
+
+    /// The maximum time between reads
+    read_timeout: Duration,
 }
 
 impl HeaderBuffer {
     /// Creates a new [`Buffer`] with `capacity` bytes of space
-    pub(super) fn new(capacity: usize) -> Self {
+    pub(super) fn new(capacity: usize, read_timeout: Duration) -> Self {
         let buffer = vec![0; capacity].into_boxed_slice();
 
         HeaderBuffer {
             buffer,
             length: 0,
             index: 0,
+            read_timeout,
         }
     }
 
@@ -92,7 +97,13 @@ impl HeaderBuffer {
     async fn read(&mut self, stream: &mut TCPStream) -> Result<(), HTTPParseError> {
         assert_ne!(self.length, self.buffer.len());
 
-        let count = stream.read(&mut self.buffer[self.length..]).await?;
+        let count = Timeout::new(
+            stream.read(&mut self.buffer[self.length..]),
+            self.read_timeout,
+        )?
+        .await
+        .map(|result| result.map_err(Into::into))
+        .unwrap_or(Err(HTTPParseError::HeaderReadTimeout))?;
 
         if count == 0 {
             return Err(HTTPParseError::IncompleteHeader);

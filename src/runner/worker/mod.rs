@@ -1,6 +1,6 @@
 use client::handle_client;
 use connections::Connections;
-use lasync::executor::FutureQueue;
+use lasync::FutureQueue;
 use std::{num::NonZeroUsize, sync::Arc};
 
 mod accept;
@@ -20,6 +20,6 @@ pub(super) fn run<Protocol: crate::Protocol, App: crate::App<Protocol = Protocol
         accept_clients(app, listener, max_connections, child_future_queue).await;
     });
 
-    lasync::executor::run_queue(super::NUM_EVENTS, future_queue).unwrap();
+    lasync::run_queue(super::NUM_EVENTS, future_queue).unwrap();
     panic!("Executor returned in huntsman thread!");
 }

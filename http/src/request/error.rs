@@ -24,8 +24,14 @@ pub enum HTTPParseError {
     /// The request body is too large
     BodyTooLarge,
 
+    /// The client took too long to send the headers
+    HeaderReadTimeout,
+
+    /// The client took too long to send the body
+    BodyReadTimeout,
+
     /// An I/O error occurred while parsing a request
-    IO(lasync::executor::Error),
+    IO(lasync::Error),
 }
 
 impl std::error::Error for HTTPParseError {
@@ -40,7 +46,9 @@ impl std::error::Error for HTTPParseError {
             | HTTPParseError::InvalidVersion
             | HTTPParseError::InvalidField
             | HTTPParseError::InvalidContentLength
-            | HTTPParseError::BodyTooLarge => None,
+            | HTTPParseError::BodyTooLarge
+            | HTTPParseError::HeaderReadTimeout
+            | HTTPParseError::BodyReadTimeout => None,
         }
     }
 }
@@ -56,6 +64,8 @@ impl std::fmt::Display for HTTPParseError {
             HTTPParseError::InvalidField => write!(f, "invalid field"),
             HTTPParseError::InvalidContentLength => write!(f, "invalid content length"),
             HTTPParseError::BodyTooLarge => write!(f, "request body too large"),
+            HTTPParseError::HeaderReadTimeout => write!(f, "reading header timed out"),
+            HTTPParseError::BodyReadTimeout => write!(f, "reading body timed out"),
 
             HTTPParseError::IO(error) => write!(
                 f,
@@ -72,8 +82,8 @@ impl std::fmt::Debug for HTTPParseError {
     }
 }
 
-impl From<lasync::executor::Error> for HTTPParseError {
-    fn from(error: lasync::executor::Error) -> Self {
+impl From<lasync::Error> for HTTPParseError {
+    fn from(error: lasync::Error) -> Self {
         HTTPParseError::IO(error)
     }
 }

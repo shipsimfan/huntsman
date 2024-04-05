@@ -1,6 +1,6 @@
 use super::HeaderBuffer;
 use crate::HTTPParseError;
-use lasync::futures::net::TCPStream;
+use lasync::net::TCPStream;
 
 /// A stream of bytes from a [`TcpStream`]
 pub(crate) struct Stream<'a, 'b> {

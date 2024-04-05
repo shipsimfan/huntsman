@@ -1,5 +1,5 @@
 use crate::{ListenAddress, Result};
-use lasync::futures::net::{TCPListener, TCPStream};
+use lasync::net::{TCPListener, TCPStream};
 use std::net::SocketAddr;
 
 /// The sockets to listen for connections on

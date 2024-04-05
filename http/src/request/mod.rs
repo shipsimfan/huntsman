@@ -1,6 +1,6 @@
 use crate::Stream;
-use lasync::futures::io::Read;
-use std::ops::Deref;
+use lasync::{io::Read, time::Timeout};
+use std::{ops::Deref, time::Duration};
 
 mod error;
 mod header;
@@ -39,6 +39,7 @@ impl<'a> HTTPRequest<'a> {
     pub(crate) async fn parse(
         mut stream: Stream<'a, '_>,
         max_body_size: usize,
+        body_read_timeout: Duration,
     ) -> Result<Self, HTTPParseError> {
         let header = HTTPRequestHeader::parse(&mut stream).await?;
 
@@ -53,7 +54,13 @@ impl<'a> HTTPRequest<'a> {
             let (stream, mut buffer, current_length) = stream.body(content_length);
 
             if current_length < buffer.len() {
-                stream.read_exact(&mut buffer[current_length..]).await?;
+                Timeout::new(
+                    stream.read_exact(&mut buffer[current_length..]),
+                    body_read_timeout,
+                )?
+                .await
+                .map(|result| result.map_err(Into::into))
+                .unwrap_or(Err(HTTPParseError::BodyReadTimeout))?;
             }
 
             body = buffer;

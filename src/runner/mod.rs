@@ -1,5 +1,5 @@
 use crate::StartError;
-use lasync::executor::FutureQueue;
+use lasync::FutureQueue;
 use std::{num::NonZeroUsize, sync::Arc};
 
 mod options;
@@ -23,7 +23,7 @@ pub fn run<Protocol: crate::Protocol, App: crate::App<Protocol = Protocol>>(
         result = async_run(app, huntsman_options, protocol_options, child_future_queue).await;
     });
 
-    lasync::executor::run_queue(NUM_EVENTS, future_queue)?;
+    lasync::run_queue(NUM_EVENTS, future_queue)?;
 
     result
 }

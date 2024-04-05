@@ -5,71 +5,50 @@ version = 3
 [[package]]
 name = "executor"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#511197b428bea7d5e1e95169440c4809f1b44b4e"
+source = "git+https://github.com/shipsimfan/lib-lasync#bb7a5132da5788c838ab1002918d173eacfd6c9b"
 dependencies = [
  "executor-common",
  "executor-linux",
- "executor-windows",
 ]
 
 [[package]]
 name = "executor-common"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#511197b428bea7d5e1e95169440c4809f1b44b4e"
+source = "git+https://github.com/shipsimfan/lib-lasync#bb7a5132da5788c838ab1002918d173eacfd6c9b"
 
 [[package]]
 name = "executor-linux"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#511197b428bea7d5e1e95169440c4809f1b44b4e"
+source = "git+https://github.com/shipsimfan/lib-lasync#bb7a5132da5788c838ab1002918d173eacfd6c9b"
 dependencies = [
  "executor-common",
  "linux",
  "uring",
-]
-
-[[package]]
-name = "executor-windows"
-version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#511197b428bea7d5e1e95169440c4809f1b44b4e"
-dependencies = [
- "executor-common",
- "win32",
 ]
 
 [[package]]
 name = "futures"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#511197b428bea7d5e1e95169440c4809f1b44b4e"
+source = "git+https://github.com/shipsimfan/lib-lasync#bb7a5132da5788c838ab1002918d173eacfd6c9b"
 dependencies = [
  "futures-common",
  "futures-linux",
- "futures-windows",
 ]
 
 [[package]]
 name = "futures-common"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#511197b428bea7d5e1e95169440c4809f1b44b4e"
+source = "git+https://github.com/shipsimfan/lib-lasync#bb7a5132da5788c838ab1002918d173eacfd6c9b"
 
 [[package]]
 name = "futures-linux"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#511197b428bea7d5e1e95169440c4809f1b44b4e"
+source = "git+https://github.com/shipsimfan/lib-lasync#bb7a5132da5788c838ab1002918d173eacfd6c9b"
 dependencies = [
  "executor",
  "futures-common",
  "linux",
  "uring",
-]
-
-[[package]]
-name = "futures-windows"
-version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#511197b428bea7d5e1e95169440c4809f1b44b4e"
-dependencies = [
- "executor",
- "futures-common",
- "win32",
 ]
 
 [[package]]
@@ -98,7 +77,7 @@ dependencies = [
 [[package]]
 name = "lasync"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#511197b428bea7d5e1e95169440c4809f1b44b4e"
+source = "git+https://github.com/shipsimfan/lib-lasync#bb7a5132da5788c838ab1002918d173eacfd6c9b"
 dependencies = [
  "executor",
  "futures",
@@ -107,17 +86,12 @@ dependencies = [
 [[package]]
 name = "linux"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-linux#cdfdd54f60408ddc31afc7306f5d742bd224030c"
+source = "git+https://github.com/shipsimfan/lib-linux#c1d1a375248b22b0ed1000f1ed207d635f29af3d"
 
 [[package]]
 name = "uring"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-uring#0405f4e0a3ec110f1c4fab5936785e6b5fd38715"
+source = "git+https://github.com/shipsimfan/lib-uring#198475f9c13c860b548bc2735eff43e4f5d24240"
 dependencies = [
  "linux",
 ]
-
-[[package]]
-name = "win32"
-version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-win32#d4a9825f703973e96666d6994f8321744e0c7d86"

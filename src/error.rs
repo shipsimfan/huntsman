@@ -1,7 +1,7 @@
 /// An error during the runtime of the server
 pub enum StartError<Protocol: crate::Protocol> {
     /// The error occurred while starting the asynchronous runtime
-    Async(lasync::executor::Error),
+    Async(lasync::Error),
 
     /// The error occurred while the protocol was starting the listen sockets
     Protocol(Protocol::ListenError),
@@ -36,8 +36,8 @@ impl<Protocol: crate::Protocol> std::fmt::Debug for StartError<Protocol> {
     }
 }
 
-impl<Protocol: crate::Protocol> From<lasync::executor::Error> for StartError<Protocol> {
-    fn from(error: lasync::executor::Error) -> Self {
+impl<Protocol: crate::Protocol> From<lasync::Error> for StartError<Protocol> {
+    fn from(error: lasync::Error) -> Self {
         StartError::Async(error)
     }
 }

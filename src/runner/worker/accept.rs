@@ -1,5 +1,5 @@
 use super::Connections;
-use lasync::executor::FutureQueue;
+use lasync::FutureQueue;
 use std::{num::NonZeroUsize, sync::Arc};
 
 /// Asynchronously accepts clients, waiting if the max connections are reached

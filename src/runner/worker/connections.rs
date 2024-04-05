@@ -1,4 +1,4 @@
-use lasync::futures::sync::Notify;
+use lasync::sync::LocalNotify;
 use std::{cell::RefCell, num::NonZeroUsize, rc::Rc};
 
 /// Records the current connections on a worker
@@ -10,7 +10,7 @@ pub(super) struct Connections {
     count: RefCell<usize>,
 
     /// The [`Notify`] to signal when a client disconnects
-    notify: Notify,
+    notify: LocalNotify,
 }
 
 impl Connections {
@@ -19,7 +19,7 @@ impl Connections {
         Rc::new(Connections {
             max_connections: max_connections.get(),
             count: RefCell::new(0),
-            notify: Notify::new(),
+            notify: LocalNotify::new(),
         })
     }
 
