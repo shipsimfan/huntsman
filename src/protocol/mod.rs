@@ -19,7 +19,7 @@ pub trait Protocol: 'static + Sized + Send + Sync {
     type Request<'a>;
 
     /// Responses sent to the client
-    type Response;
+    type Response<'a>;
 
     /// The error when starting the server and accepting clients
     type ListenError: std::error::Error;
@@ -31,9 +31,9 @@ pub trait Protocol: 'static + Sized + Send + Sync {
     type SendError: std::error::Error;
 
     /// The client for this protocol
-    type Client: for<'a> ProtocolClient<
+    type Client: for<'a, 'b> ProtocolClient<
         Request<'a> = Self::Request<'a>,
-        Response = Self::Response,
+        Response<'b> = Self::Response<'b>,
         ReadError = Self::ReadError,
         SendError = Self::SendError,
     >;

@@ -31,10 +31,14 @@ pub(super) async fn handle_client<
         }
     }
 
-    if let Some(response) = response {
-        if let Err(error) = client_socket.send(response).await {
-            app.send_error(&mut client, error).await;
-        }
+    let send_result = match response.take() {
+        Some(response) => client_socket.send(response).await,
+        None => Ok(()),
+    };
+    drop(response);
+
+    if let Err(error) = send_result {
+        app.send_error(&mut client, error).await;
     }
 
     connections.end_connection();

@@ -12,14 +12,14 @@ pub trait ProtocolClient: 'static + Sized + Send {
     type Request<'a>: Sized;
 
     /// A response sent to a client
-    type Response;
+    type Response<'a>;
 
     /// Attempt to read and parse the next request from the client
     fn read<'a>(&'a mut self) -> impl Future<Output = Result<Self::Request<'a>, Self::ReadError>>;
 
     /// Send this response on `transport`
-    fn send(
+    fn send<'a>(
         &mut self,
-        response: Self::Response,
+        response: Self::Response<'a>,
     ) -> impl Future<Output = Result<(), Self::SendError>>;
 }

@@ -22,7 +22,9 @@ pub use client::HTTPClient;
 pub use lasync::{Error, Result};
 pub use listen_address::ListenAddress;
 pub use options::HTTPOptions;
-pub use request::{HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestHeader};
+pub use request::{
+    HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestField, HTTPRequestHeader, HTTPTarget,
+};
 pub use response::{HTTPResponse, HTTPStatus};
 
 /// The HTTP protocol
@@ -58,7 +60,7 @@ impl Protocol for HTTP {
 
     type Request<'a> = HTTPRequest<'a>;
 
-    type Response = HTTPResponse;
+    type Response<'a> = HTTPResponse<'a>;
 
     type ListenError = lasync::Error;
 

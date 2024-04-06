@@ -56,7 +56,7 @@ impl ProtocolClient for HTTPClient {
 
     type Request<'a> = HTTPRequest<'a>;
 
-    type Response = HTTPResponse;
+    type Response<'a> = HTTPResponse<'a>;
 
     fn read<'a>(&'a mut self) -> impl Future<Output = Result<Self::Request<'a>, Self::ReadError>> {
         let stream = Stream::new(&mut self.buffer, &mut self.socket);
@@ -64,9 +64,9 @@ impl ProtocolClient for HTTPClient {
         HTTPRequest::parse(stream, self.max_body_size, self.body_read_timeout)
     }
 
-    fn send(
+    fn send<'a>(
         &mut self,
-        response: Self::Response,
+        response: Self::Response<'a>,
     ) -> impl Future<Output = Result<(), Self::SendError>> {
         response.send(&mut self.socket, self.write_timeout)
     }

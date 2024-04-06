@@ -6,7 +6,7 @@ mod error;
 mod header;
 
 pub use error::HTTPParseError;
-pub use header::{HTTPMethod, HTTPRequestHeader};
+pub use header::{HTTPMethod, HTTPRequestField, HTTPRequestHeader, HTTPTarget};
 
 /// An HTTP request received from a client
 #[derive(Debug)]

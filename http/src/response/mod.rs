@@ -9,17 +9,17 @@ mod status;
 pub use status::HTTPStatus;
 
 /// An HTTP response to be sent to the client
-pub struct HTTPResponse {
+pub struct HTTPResponse<'a> {
     /// The header of the response
     header: Vec<u8>,
 
     /// The body of the response
-    body: Cow<'static, [u8]>,
+    body: Cow<'a, [u8]>,
 }
 
-impl HTTPResponse {
+impl<'a> HTTPResponse<'a> {
     /// Creates a new [`HTTPResponse`]
-    pub fn new<T: Into<Cow<'static, [u8]>>>(status: HTTPStatus, body: T) -> Self {
+    pub fn new<T: Into<Cow<'a, [u8]>>>(status: HTTPStatus, body: T) -> Self {
         let mut header = status.generate();
 
         header.extend_from_slice(SERVER.as_bytes());
@@ -73,7 +73,7 @@ impl HTTPResponse {
     }
 }
 
-impl From<HTTPStatus> for HTTPResponse {
+impl<'a> From<HTTPStatus> for HTTPResponse<'a> {
     fn from(status: HTTPStatus) -> Self {
         HTTPResponse::new(status, b"" as &'static [u8])
     }

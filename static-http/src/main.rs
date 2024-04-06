@@ -1,18 +1,118 @@
 use huntsman::Protocol;
-use huntsman_http::{HTTPParseError, HTTPResponse, HTTPStatus, ListenAddress, HTTP};
-use std::{future::Future, net::SocketAddr, sync::Arc};
+use huntsman_http::{HTTPParseError, HTTPResponse, HTTPStatus, HTTPTarget, ListenAddress, HTTP};
+use std::{
+    ffi::OsString,
+    future::Future,
+    net::SocketAddr,
+    os::unix::ffi::OsStringExt,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
-struct Static;
+/// An HTTP app which serves static files from a path
+struct Static {
+    /// The path to server static files from
+    base: PathBuf,
 
-const NOT_FOUND: &[u8] = include_bytes!("../404.html");
+    /// The body to respond with when a bad request is submitted
+    bad_request: Vec<u8>,
+
+    /// The body to respond with when a file cannot be found for a request
+    not_found: Vec<u8>,
+}
 
 fn main() {
     huntsman::run(
-        Static,
+        Static::default(),
         huntsman::Options::default(),
         huntsman_http::HTTPOptions::default(),
     )
     .unwrap()
+}
+
+fn display_path(prefix: &str, path: &[u8]) {
+    println!("{}: {}", prefix, unsafe {
+        std::str::from_utf8_unchecked(path)
+    })
+}
+
+/// Parses a `url` into an acceptable path under `base`
+///
+/// If there is an error with the `url`, [`None`] is returned and a "400 Bad Request" response
+/// should be given to the client.
+fn parse_path(url: HTTPTarget, base: &Path) -> Option<PathBuf> {
+    println!("URL: {}", url);
+
+    // The capacity will either be:
+    //  - one greater (from a trailing slash) if no "%XX" url segments exits, or
+    //  - it will shrink because "%XX" will take three bytes and convert them to one.
+    let mut path = Vec::with_capacity(base.as_os_str().len() + url.len() + 1);
+    path.extend_from_slice(base.as_os_str().as_encoded_bytes());
+
+    let base_length = path.len();
+
+    // Verify the ending of the path is a '/'
+    match path.last() {
+        Some(last) => {
+            if *last != b'/' {
+                path.push(b'/');
+            }
+        }
+        // Make sure it starts from this directory, not the root of the filesystem
+        None => path.extend_from_slice(b"./"),
+    }
+
+    // The indices of the path segments
+    let mut segments = Vec::new();
+    let mut url = url.into_iter().map(|c| *c).peekable();
+
+    while let Some(c) = url.next() {
+        match c {
+            b'/' => {}
+            b'?' => break, // Reached the GET parameters
+            _ => return None,
+        }
+
+        let segment_index = path.len();
+
+        while let Some(&c) = url.peek() {
+            match c {
+                b'/' | b'?' => break,
+                b'%' => todo!(),
+                _ => {
+                    path.push(c);
+                    url.next();
+                }
+            }
+        }
+
+        if path.len() == segment_index {
+            continue;
+        }
+
+        let segment = &path[segment_index..];
+        display_path("Segment", segment);
+        if segment == b".." {
+            if let Some(last_index) = segments.pop() {
+                path.truncate(last_index);
+            } else {
+                path.truncate(base_length);
+            }
+            display_path("Path after \"..\"", &path);
+            continue;
+        }
+
+        segments.push(segment_index);
+        path.push(b'/');
+
+        display_path("Path after push", &path);
+    }
+
+    display_path("Path before final pop", &path);
+
+    // Remove the trailing "/"
+    path.pop();
+    Some(OsString::from_vec(path).into())
 }
 
 impl huntsman::App for Static {
@@ -30,16 +130,28 @@ impl huntsman::App for Static {
         }
     }
 
-    fn handle_request<'a>(
-        self: &Arc<Self>,
-        client: &mut Self::Client,
-        request: <Self::Protocol as Protocol>::Request<'a>,
-    ) -> impl Future<Output = <Self::Protocol as Protocol>::Response> {
+    fn handle_request<'a, 'b>(
+        self: &'a Arc<Self>,
+        client: &'a mut Self::Client,
+        request: <Self::Protocol as Protocol>::Request<'b>,
+    ) -> impl Future<Output = <Self::Protocol as Protocol>::Response<'a>> {
         async move {
+            let path = match parse_path(request.target(), &self.base) {
+                Some(path) => path,
+                None => {
+                    println!(
+                        "Bad request target \"{}\" from {}",
+                        request.target(),
+                        client
+                    );
+                    return HTTPResponse::new(HTTPStatus::BadRequest, &self.bad_request);
+                }
+            };
+
             println!(
                 "{} request for {} from {}",
                 request.method(),
-                request.target(),
+                path.display(),
                 client
             );
             for field in request.fields() {
@@ -50,7 +162,7 @@ impl huntsman::App for Static {
             }
             println!();
 
-            let mut response = HTTPResponse::new(HTTPStatus::NotFound, NOT_FOUND);
+            let mut response = HTTPResponse::new(HTTPStatus::NotFound, &self.not_found);
 
             response.push_field(
                 "Content-Type".as_bytes(),
@@ -79,11 +191,11 @@ impl huntsman::App for Static {
         async move { eprintln!("An error occurred while accepting a client - {}", error) }
     }
 
-    fn read_error(
-        self: &Arc<Self>,
-        client: &mut Self::Client,
+    fn read_error<'a>(
+        self: &'a Arc<Self>,
+        client: &'a mut Self::Client,
         error: HTTPParseError,
-    ) -> impl Future<Output = Option<HTTPResponse>> {
+    ) -> impl Future<Output = Option<HTTPResponse<'a>>> {
         async move {
             eprintln!(
                 "An error occurred while parsing a request from {} - {}",
@@ -107,6 +219,16 @@ impl huntsman::App for Static {
                 "An error occurred while sending a response to {} - {}",
                 client, error
             );
+        }
+    }
+}
+
+impl Default for Static {
+    fn default() -> Self {
+        Static {
+            base: "public/".into(),
+            not_found: include_bytes!("404.html").to_vec(),
+            bad_request: include_bytes!("400.html").to_vec(),
         }
     }
 }

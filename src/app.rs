@@ -10,11 +10,11 @@ pub trait App: 'static + Send + Sync {
     type Client;
 
     /// Handle a request from a client
-    fn handle_request<'a>(
-        self: &Arc<Self>,
-        client: &mut Self::Client,
-        request: <Self::Protocol as Protocol>::Request<'a>,
-    ) -> impl Future<Output = <Self::Protocol as Protocol>::Response>;
+    fn handle_request<'a, 'b>(
+        self: &'a Arc<Self>,
+        client: &'a mut Self::Client,
+        request: <Self::Protocol as Protocol>::Request<'b>,
+    ) -> impl Future<Output = <Self::Protocol as Protocol>::Response<'a>>;
 
     /// Called when the server starts
     #[allow(unused_variables)]
@@ -29,8 +29,8 @@ pub trait App: 'static + Send + Sync {
     ///
     /// Returns [`None`] if the client should be rejected
     #[allow(unused_variables)]
-    fn on_client_connect(
-        self: &Arc<Self>,
+    fn on_client_connect<'a>(
+        self: &'a Arc<Self>,
         source: <Self::Protocol as Protocol>::ClientAddress,
     ) -> impl Future<Output = Option<Self::Client>>;
 
@@ -54,11 +54,11 @@ pub trait App: 'static + Send + Sync {
 
     /// An error occurred while parsing a request from a client
     #[allow(unused_variables)]
-    fn read_error(
-        self: &Arc<Self>,
-        client: &mut Self::Client,
+    fn read_error<'a>(
+        self: &'a Arc<Self>,
+        client: &'a mut Self::Client,
         error: <Self::Protocol as Protocol>::ReadError,
-    ) -> impl Future<Output = Option<<Self::Protocol as Protocol>::Response>> {
+    ) -> impl Future<Output = Option<<Self::Protocol as Protocol>::Response<'a>>> {
         async { None }
     }
 
