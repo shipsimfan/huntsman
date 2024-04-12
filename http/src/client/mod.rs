@@ -30,22 +30,24 @@ pub struct HTTPClient {
 impl HTTPClient {
     /// Creates a new [`HTTPClient`]
     pub(crate) fn new(
-        socket: TCPStream,
+        mut socket: TCPStream,
         max_header_size: usize,
         max_body_size: usize,
         header_read_timeout: Duration,
         body_read_timeout: Duration,
         write_timeout: Duration,
-    ) -> Self {
+    ) -> crate::Result<Self> {
         let buffer = HeaderBuffer::new(max_header_size, header_read_timeout);
 
-        HTTPClient {
+        socket.set_nodelay(true)?;
+
+        Ok(HTTPClient {
             socket,
             buffer,
             max_body_size,
             body_read_timeout,
             write_timeout,
-        }
+        })
     }
 }
 

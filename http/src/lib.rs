@@ -104,7 +104,7 @@ impl Protocol for HTTP {
                 self.header_read_timeout,
                 self.body_read_timeout,
                 self.write_timeout,
-            );
+            )?;
 
             Ok((client, address))
         }
