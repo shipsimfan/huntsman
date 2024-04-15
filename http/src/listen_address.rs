@@ -6,7 +6,7 @@ const DEFAULT_HTTP_PORT: u16 = 8080;
 
 #[cfg(not(debug_assertions))]
 /// The default port for unsecured HTTP/1.1 connections
-const DEFAULT_HTTP_PORT: u16 = 80;
+const DEFAULT_HTTP_PORT: u16 = 8080;
 
 /// The addresses this server will listen on
 #[derive(Clone)]

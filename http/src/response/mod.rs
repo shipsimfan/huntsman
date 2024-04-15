@@ -1,5 +1,5 @@
 use crate::Result;
-use lasync::{io::Write, net::TCPStream, platform::errno::ETIMEDOUT, time::Timeout, Error};
+use lasync::{io::Write, net::TCPStream, time::Timeout, Error};
 use name::SERVER;
 use std::{borrow::Cow, time::Duration};
 
@@ -69,7 +69,7 @@ impl<'a> HTTPResponse<'a> {
             write_timeout,
         )?
         .await
-        .unwrap_or(Err(Error::new(ETIMEDOUT)))
+        .unwrap_or(Err(Error::ETIMEDOUT))
     }
 }
 

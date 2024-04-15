@@ -1,7 +1,7 @@
 use huntsman::Protocol;
 use huntsman_http::{HTTPParseError, HTTPResponse, HTTPStatus, HTTPTarget, ListenAddress, HTTP};
 use std::{
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     future::Future,
     net::SocketAddr,
     os::unix::ffi::OsStringExt,
@@ -28,12 +28,6 @@ fn main() {
         huntsman_http::HTTPOptions::default(),
     )
     .unwrap()
-}
-
-fn display_path(prefix: &str, path: &[u8]) {
-    println!("{}: {}", prefix, unsafe {
-        std::str::from_utf8_unchecked(path)
-    })
 }
 
 /// Parses a `url` into an acceptable path under `base`
@@ -91,28 +85,33 @@ fn parse_path(url: HTTPTarget, base: &Path) -> Option<PathBuf> {
         }
 
         let segment = &path[segment_index..];
-        display_path("Segment", segment);
         if segment == b".." {
             if let Some(last_index) = segments.pop() {
                 path.truncate(last_index);
             } else {
                 path.truncate(base_length);
             }
-            display_path("Path after \"..\"", &path);
             continue;
         }
 
         segments.push(segment_index);
         path.push(b'/');
-
-        display_path("Path after push", &path);
     }
-
-    display_path("Path before final pop", &path);
 
     // Remove the trailing "/"
     path.pop();
     Some(OsString::from_vec(path).into())
+}
+
+fn not_found(body: &[u8]) -> HTTPResponse {
+    let mut response = HTTPResponse::new(HTTPStatus::NotFound, &*body);
+
+    response.push_field(
+        "Content-Type".as_bytes(),
+        "text/html; charset=utf-8".as_bytes(),
+    );
+
+    response
 }
 
 impl huntsman::App for Static {
@@ -151,7 +150,7 @@ impl huntsman::App for Static {
             println!(
                 "{} request for {} from {}",
                 request.method(),
-                path.display(),
+                request.target(),
                 client
             );
             for field in request.fields() {
@@ -160,13 +159,28 @@ impl huntsman::App for Static {
             if request.body().len() > 0 {
                 println!("{}", String::from_utf8_lossy(request.body()));
             }
+            println!("Sending {}", path.display());
             println!();
 
-            let mut response = HTTPResponse::new(HTTPStatus::NotFound, &self.not_found);
+            let body = match lasync::fs::read(&path).await {
+                Ok(body) => body,
+                Err(_) => return not_found(&self.not_found),
+            };
 
+            let mut response = HTTPResponse::new(HTTPStatus::OK, body);
             response.push_field(
-                "Content-Type".as_bytes(),
-                "text/html; charset=utf-8".as_bytes(),
+                b"Content-Type",
+                match path
+                    .extension()
+                    .unwrap_or(OsStr::new(""))
+                    .as_encoded_bytes()
+                {
+                    b"css" => b"text/css",
+                    b"htm" | b"html" => b"text/html",
+                    b"js" | b"mjs" => b"text/javascript",
+                    b"txt" => b"text/plain",
+                    _ => b"application/octet-stream",
+                },
             );
 
             response

@@ -10,5 +10,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+lasync.workspace = true
+
 huntsman.path = ".."
 huntsman-http.path = "../http"
