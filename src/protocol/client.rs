@@ -15,7 +15,9 @@ pub trait ProtocolClient: 'static + Sized + Send {
     type Response<'a>;
 
     /// Attempt to read and parse the next request from the client
-    fn read<'a>(&'a mut self) -> impl Future<Output = Result<Self::Request<'a>, Self::ReadError>>;
+    fn read<'a>(
+        &'a mut self,
+    ) -> impl Future<Output = Result<Option<Self::Request<'a>>, Self::ReadError>>;
 
     /// Send this response on `transport`
     fn send<'a>(

@@ -16,7 +16,10 @@ pub(super) async fn handle_client<
 
     loop {
         let request = match client_socket.read().await {
-            Ok(request) => request,
+            Ok(request) => match request {
+                Some(request) => request,
+                None => break,
+            },
             Err(error) => {
                 response = app.read_error(&mut client, error).await;
                 break;

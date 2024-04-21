@@ -40,8 +40,17 @@ impl<'a> HTTPRequest<'a> {
         mut stream: Stream<'a, '_>,
         max_body_size: usize,
         body_read_timeout: Duration,
-    ) -> Result<Self, HTTPParseError> {
-        let header = HTTPRequestHeader::parse(&mut stream).await?;
+    ) -> Result<Option<Self>, HTTPParseError> {
+        let header = match HTTPRequestHeader::parse(&mut stream).await {
+            Ok(header) => header,
+            Err(error) => {
+                return if stream.len() == 0 {
+                    Ok(None)
+                } else {
+                    Err(error)
+                };
+            }
+        };
 
         let mut body = Vec::new().into_boxed_slice();
         if let Some(content_length) = header.field(b"Content-Length") {
@@ -66,7 +75,7 @@ impl<'a> HTTPRequest<'a> {
             body = buffer;
         }
 
-        Ok(HTTPRequest { header, body })
+        Ok(Some(HTTPRequest { header, body }))
     }
 
     /// Gets the body of this request

@@ -19,6 +19,11 @@ impl<'a, 'b> Stream<'a, 'b> {
         Stream { buffer, socket }
     }
 
+    /// Gets the number of bytes parsed so far
+    pub(crate) fn len(&self) -> usize {
+        self.buffer.index()
+    }
+
     /// Reads the next value from the stream without consuming it
     pub(crate) async fn peek(&mut self) -> Result<u8, HTTPParseError> {
         self.buffer.peek(self.socket).await
