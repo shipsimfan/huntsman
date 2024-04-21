@@ -3,6 +3,7 @@ use huntsman_http::{
     HTTPParseError, HTTPRequest, HTTPResponse, HTTPStatus, HTTPTarget, ListenAddress, HTTP,
 };
 use std::{
+    borrow::Cow,
     ffi::OsStr,
     net::SocketAddr,
     path::{Path, PathBuf},
@@ -15,10 +16,10 @@ pub struct Static {
     base: PathBuf,
 
     /// The body to respond with when a bad request is submitted
-    bad_request: Vec<u8>,
+    bad_request: (Cow<'static, [u8]>, &'static [u8]),
 
     /// The body to respond with when a file cannot be found for a request
-    not_found: Vec<u8>,
+    not_found: (Cow<'static, [u8]>, &'static [u8]),
 }
 
 /// Displays the target and fields of a request
@@ -44,7 +45,7 @@ async fn read_file(path: &Path) -> Option<Vec<u8>> {
 }
 
 /// Parses the extension of `path` and guesses the MIME type of its contents
-fn parse_extension(path: &Path) -> &[u8] {
+fn parse_extension(path: &Path) -> &'static [u8] {
     match path
         .extension()
         .unwrap_or(OsStr::new(""))
@@ -59,17 +60,41 @@ fn parse_extension(path: &Path) -> &[u8] {
 }
 
 impl Static {
+    /// Creates a new [`Static`] http serving app
+    pub fn new<S1: Into<Cow<'static, [u8]>>, S2: Into<Cow<'static, [u8]>>>(
+        base: PathBuf,
+        bad_request: (S1, &'static [u8]),
+        not_found: (S2, &'static [u8]),
+    ) -> Self {
+        Static {
+            base,
+            bad_request: (bad_request.0.into(), bad_request.1),
+            not_found: (not_found.0.into(), not_found.1),
+        }
+    }
+
     /// Attempts to parse the target into a path or returns a "400 Bad Request" response
     fn parse_path<'a>(&'a self, target: HTTPTarget) -> Result<PathBuf, HTTPResponse<'a>> {
-        crate::path::parse(target, &self.base, 0)
-            .ok_or_else(|| (HTTPStatus::BadRequest, &self.bad_request).into())
+        crate::path::parse(target, &self.base, 0).ok_or_else(|| {
+            (
+                HTTPStatus::BadRequest,
+                self.bad_request.0.as_ref(),
+                self.bad_request.1,
+            )
+                .into()
+        })
     }
 
     /// Attempts to read the file at `path`
     async fn read_file<'a>(&'a self, path: &Path) -> Result<Vec<u8>, HTTPResponse<'a>> {
-        read_file(path)
-            .await
-            .ok_or_else(|| (HTTPStatus::NotFound, &self.not_found).into())
+        read_file(path).await.ok_or_else(|| {
+            (
+                HTTPStatus::NotFound,
+                self.not_found.0.as_ref(),
+                self.not_found.1,
+            )
+                .into()
+        })
     }
 }
 
@@ -111,10 +136,7 @@ impl App for Static {
             }
         };
 
-        let mut response = HTTPResponse::new(HTTPStatus::OK, body);
-        response.push_field(b"Content-Type", parse_extension(&path));
-
-        response
+        HTTPResponse::new(HTTPStatus::OK, body, parse_extension(&path))
     }
 
     async fn on_client_connect(self: &Arc<Self>, source: SocketAddr) -> Option<SocketAddr> {
@@ -145,7 +167,12 @@ impl App for Static {
 
         Some(match error {
             HTTPParseError::HeadersTooLong => HTTPStatus::ContentTooLarge.into(),
-            _ => (HTTPStatus::BadRequest, &self.bad_request).into(),
+            _ => (
+                HTTPStatus::BadRequest,
+                self.bad_request.0.as_ref(),
+                self.bad_request.1,
+            )
+                .into(),
         })
     }
 
@@ -159,10 +186,10 @@ impl App for Static {
 
 impl Default for Static {
     fn default() -> Self {
-        Static {
-            base: "public/".into(),
-            not_found: include_bytes!("404.html").to_vec(),
-            bad_request: include_bytes!("400.html").to_vec(),
-        }
+        Static::new(
+            "public/".into(),
+            (include_bytes!("400.html") as &[u8], b"text/html"),
+            (include_bytes!("404.html") as &[u8], b"text/html"),
+        )
     }
 }
