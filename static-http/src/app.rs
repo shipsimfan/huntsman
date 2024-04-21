@@ -145,7 +145,7 @@ impl App for Static {
 
         Some(match error {
             HTTPParseError::HeadersTooLong => HTTPStatus::ContentTooLarge.into(),
-            _ => HTTPStatus::BadRequest.into(),
+            _ => (HTTPStatus::BadRequest, &self.bad_request).into(),
         })
     }
 
