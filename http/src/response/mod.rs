@@ -14,30 +14,34 @@ pub struct HTTPResponse<'a> {
     header: Vec<u8>,
 
     /// The body of the response
-    body: Cow<'a, [u8]>,
+    body: Option<Cow<'a, [u8]>>,
 }
 
 impl<'a> HTTPResponse<'a> {
-    /// Creates a new [`HTTPResponse`]
+    /// Creates a new [`HTTPResponse`] with a body
     pub fn new<T: Into<Cow<'a, [u8]>>>(status: HTTPStatus, body: T) -> Self {
-        let mut header = status.generate();
+        let mut response = Self::new_status(status);
+        response.set_body(body);
+        response
+    }
 
+    /// Creates a new [`HTTPResponse`] without a body
+    pub fn new_status(status: HTTPStatus) -> Self {
+        let mut header = status.generate();
         header.extend_from_slice(SERVER.as_bytes());
 
-        HTTPResponse {
-            header,
-            body: body.into(),
-        }
+        HTTPResponse { header, body: None }
     }
 
     /// Gets the body of this response
-    pub fn body(&self) -> &[u8] {
-        &self.body
+    pub fn body(&self) -> Option<&[u8]> {
+        self.body.as_ref().map(AsRef::as_ref)
     }
 
     /// Adds a field to the end of the fields for this response
     pub fn push_field(&mut self, name: &[u8], content: &[u8]) {
         assert_ne!(name, b"Content-Length", "\"Content-Length\" fields cannot be inserted into a response, this is managed by huntsman-http");
+        assert_ne!(name, b"Server", "\"Server\" fields cannot be inserted into a response, this is managed by huntsman-http");
 
         self.header.extend_from_slice(name);
         self.header.extend_from_slice(b": ");
@@ -46,8 +50,13 @@ impl<'a> HTTPResponse<'a> {
     }
 
     /// Sets the body of this response
-    pub fn set_body<T: Into<Cow<'static, [u8]>>>(&mut self, body: T) {
-        self.body = body.into();
+    pub fn set_body<T: Into<Cow<'a, [u8]>>>(&mut self, body: T) {
+        let body = body.into();
+        if body.len() == 0 {
+            return;
+        }
+
+        self.body = Some(body);
     }
 
     /// Writes this response to `socket`
@@ -56,15 +65,23 @@ impl<'a> HTTPResponse<'a> {
         socket: &mut TCPStream,
         write_timeout: Duration,
     ) -> Result<()> {
-        self.header.extend_from_slice(b"Content-Length: ");
-        self.header
-            .extend_from_slice(format!("{}", self.body.len()).as_bytes());
+        if let Some(body_len) = self.body.as_ref().map(|body| body.len()) {
+            self.header.extend_from_slice(b"Content-Length: ");
+            self.header
+                .extend_from_slice(format!("{}", body_len).as_bytes());
+        }
+
         self.header.extend_from_slice(b"\r\n\r\n");
 
         Timeout::new(
             async move {
                 socket.write_all(&self.header).await?;
-                socket.write_all(&self.body).await
+
+                if let Some(body) = self.body.as_ref() {
+                    socket.write_all(body).await
+                } else {
+                    Ok(())
+                }
             },
             write_timeout,
         )?
@@ -75,6 +92,12 @@ impl<'a> HTTPResponse<'a> {
 
 impl<'a> From<HTTPStatus> for HTTPResponse<'a> {
     fn from(status: HTTPStatus) -> Self {
-        HTTPResponse::new(status, b"" as &'static [u8])
+        HTTPResponse::new_status(status)
+    }
+}
+
+impl<'a, T: Into<Cow<'a, [u8]>>> From<(HTTPStatus, T)> for HTTPResponse<'a> {
+    fn from(value: (HTTPStatus, T)) -> Self {
+        HTTPResponse::new(value.0, value.1)
     }
 }

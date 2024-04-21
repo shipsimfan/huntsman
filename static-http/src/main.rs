@@ -104,7 +104,7 @@ fn parse_path(url: HTTPTarget, base: &Path) -> Option<PathBuf> {
 }
 
 fn not_found(body: &[u8]) -> HTTPResponse {
-    let mut response = HTTPResponse::new(HTTPStatus::NotFound, &*body);
+    let mut response = HTTPResponse::new(HTTPStatus::NotFound, body);
 
     response.push_field(
         "Content-Type".as_bytes(),
