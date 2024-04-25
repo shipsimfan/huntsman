@@ -9,7 +9,7 @@
 use client::Stream;
 use huntsman::Protocol;
 use listeners::Listeners;
-use std::{future::Future, net::SocketAddr, time::Duration};
+use std::time::Duration;
 
 mod client;
 mod listen_address;
@@ -18,7 +18,7 @@ mod options;
 mod request;
 mod response;
 
-pub use client::HTTPClient;
+pub use client::{HTTPClient, HTTPClientAddress, HTTPProtocol};
 pub use lasync::{Error, Result};
 pub use listen_address::ListenAddress;
 pub use options::HTTPOptions;
@@ -54,7 +54,7 @@ pub struct HTTP {
 impl Protocol for HTTP {
     type Options = HTTPOptions;
 
-    type ClientAddress = SocketAddr;
+    type ClientAddress = HTTPClientAddress;
 
     type ListenAddress = ListenAddress;
 
@@ -70,43 +70,36 @@ impl Protocol for HTTP {
 
     type Client = HTTPClient;
 
-    fn start(
-        address: &Self::ListenAddress,
-        options: Self::Options,
-    ) -> impl Future<Output = Result<Self>> {
-        async move {
-            let (listeners, listen_address) = Listeners::new(address.clone())?;
+    async fn start(address: &Self::ListenAddress, options: Self::Options) -> Result<Self> {
+        let (listeners, listen_address) = Listeners::new(address.clone())?;
 
-            Ok(HTTP {
-                listeners,
-                listen_address,
-                max_header_size: options.max_header_size,
-                max_body_size: options.max_body_size,
-                header_read_timeout: options.header_read_timeout,
-                body_read_timeout: options.body_read_timeout,
-                write_timeout: options.write_timeout,
-            })
-        }
+        Ok(HTTP {
+            listeners,
+            listen_address,
+            max_header_size: options.max_header_size,
+            max_body_size: options.max_body_size,
+            header_read_timeout: options.header_read_timeout,
+            body_read_timeout: options.body_read_timeout,
+            write_timeout: options.write_timeout,
+        })
     }
 
-    fn address(&mut self) -> impl std::future::Future<Output = Self::ListenAddress> {
-        async { self.listen_address.clone() }
+    async fn address(&mut self) -> Self::ListenAddress {
+        self.listen_address.clone()
     }
 
-    fn accept(&self) -> impl Future<Output = Result<(Self::Client, Self::ClientAddress)>> {
-        async {
-            let (socket, address) = self.listeners.accept().await?;
+    async fn accept(&self) -> Result<(Self::Client, Self::ClientAddress)> {
+        let (socket, address) = self.listeners.accept().await?;
 
-            let client = HTTPClient::new(
-                socket,
-                self.max_header_size,
-                self.max_body_size,
-                self.header_read_timeout,
-                self.body_read_timeout,
-                self.write_timeout,
-            )?;
+        let client = HTTPClient::new(
+            socket,
+            self.max_header_size,
+            self.max_body_size,
+            self.header_read_timeout,
+            self.body_read_timeout,
+            self.write_timeout,
+        )?;
 
-            Ok((client, address))
-        }
+        Ok((client, address))
     }
 }

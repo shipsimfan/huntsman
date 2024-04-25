@@ -1,11 +1,11 @@
 use huntsman::{App, Protocol};
 use huntsman_http::{
-    HTTPParseError, HTTPRequest, HTTPResponse, HTTPStatus, HTTPTarget, ListenAddress, HTTP,
+    HTTPClientAddress, HTTPParseError, HTTPRequest, HTTPResponse, HTTPStatus, HTTPTarget,
+    ListenAddress, HTTP,
 };
 use std::{
     borrow::Cow,
     ffi::OsStr,
-    net::SocketAddr,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -23,7 +23,7 @@ pub struct Static {
 }
 
 /// Displays the target and fields of a request
-fn display_request(request: &HTTPRequest, client: &SocketAddr) {
+fn display_request(request: &HTTPRequest, client: &HTTPClientAddress) {
     println!();
     println!(
         "{} request for {} from {}",
@@ -101,7 +101,7 @@ impl Static {
 impl App for Static {
     type Protocol = HTTP;
 
-    type Client = SocketAddr;
+    type Client = HTTPClientAddress;
 
     async fn on_server_start(self: &Arc<Self>, address: ListenAddress) {
         println!("Server listening on:");
@@ -139,12 +139,15 @@ impl App for Static {
         HTTPResponse::new(HTTPStatus::OK, body, parse_extension(&path))
     }
 
-    async fn on_client_connect(self: &Arc<Self>, source: SocketAddr) -> Option<SocketAddr> {
+    async fn on_client_connect(
+        self: &Arc<Self>,
+        source: HTTPClientAddress,
+    ) -> Option<HTTPClientAddress> {
         println!("Client connected from {}", source);
         Some(source)
     }
 
-    async fn on_client_disconnect(self: &Arc<Self>, client: &mut SocketAddr) {
+    async fn on_client_disconnect(self: &Arc<Self>, client: &mut HTTPClientAddress) {
         println!("{} disconnected", client);
     }
 

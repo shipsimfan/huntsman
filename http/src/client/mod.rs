@@ -4,8 +4,11 @@ use huntsman::ProtocolClient;
 use lasync::net::TCPStream;
 use std::{future::Future, time::Duration};
 
+mod address;
 mod buffer;
 mod stream;
+
+pub use address::{HTTPClientAddress, HTTPProtocol};
 
 pub(crate) use stream::Stream;
 

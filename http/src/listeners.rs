@@ -1,6 +1,5 @@
-use crate::{ListenAddress, Result};
+use crate::{HTTPClientAddress, HTTPProtocol, ListenAddress, Result};
 use lasync::net::{TCPListener, TCPStream};
-use std::net::SocketAddr;
 
 /// The sockets to listen for connections on
 pub(super) struct Listeners {
@@ -26,9 +25,14 @@ impl Listeners {
     }
 
     /// Accepts a client that is attempting to connect to this socket
-    pub(super) async fn accept(&self) -> Result<(TCPStream, SocketAddr)> {
+    pub(super) async fn accept(&self) -> Result<(TCPStream, HTTPClientAddress)> {
         if let Some(http) = &self.http {
-            http.accept().await
+            http.accept().await.map(|(stream, socket_address)| {
+                (
+                    stream,
+                    HTTPClientAddress::new(HTTPProtocol::HTTP, socket_address),
+                )
+            })
         } else {
             panic!("No listeners have been enabled!");
         }
