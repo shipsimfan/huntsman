@@ -1,9 +1,5 @@
 use huntsman_http::HTTPTarget;
-use std::{
-    ffi::OsString,
-    os::unix::ffi::OsStringExt,
-    path::{Path, PathBuf},
-};
+use std::{ffi::OsString, os::unix::ffi::OsStringExt, path::Path};
 
 /// Parses a `url` into an acceptable path under `base`
 ///
@@ -12,7 +8,7 @@ use std::{
 ///
 /// `extra_padding` allows more space to be allocated for the path to allow additions to the end
 /// after parsing.
-pub fn parse(url: HTTPTarget, base: &Path, extra_padding: usize) -> Option<PathBuf> {
+pub fn parse(url: HTTPTarget, base: &Path, extra_padding: usize) -> Option<OsString> {
     // The capacity will either be:
     //  - one greater (from a trailing slash) if no "%XX" url segments exits, or
     //  - it will shrink because "%XX" will take three bytes and convert them to one.
@@ -67,8 +63,13 @@ pub fn parse(url: HTTPTarget, base: &Path, extra_padding: usize) -> Option<PathB
                     }
 
                     let c = (c1 - b'0') * 10 + (c2 - b'0');
+                    if c == 0 {
+                        return None;
+                    }
+
                     path.push(c);
                 }
+                0 => return None,
                 _ => {
                     path.push(c);
                     url.next();
@@ -100,5 +101,5 @@ pub fn parse(url: HTTPTarget, base: &Path, extra_padding: usize) -> Option<PathB
 
     // Remove the final trailing "/"
     path.pop();
-    Some(OsString::from_vec(path).into())
+    Some(OsString::from_vec(path))
 }

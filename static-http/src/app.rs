@@ -3,9 +3,13 @@ use huntsman_http::{
     HTTPClientAddress, HTTPParseError, HTTPRequest, HTTPResponse, HTTPStatus, HTTPTarget,
     ListenAddress, HTTP,
 };
+use lasync::{
+    fs::{File, Metadata},
+    io::Read,
+};
 use std::{
     borrow::Cow,
-    ffi::OsStr,
+    ffi::{OsStr, OsString},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -14,6 +18,12 @@ use std::{
 pub struct Static {
     /// The path to server static files from
     base: PathBuf,
+
+    /// The values to try when a request for a folder occurs
+    indexes: Vec<PathBuf>,
+
+    /// The length of the longest index
+    longest_index: usize,
 
     /// The body to respond with when a bad request is submitted
     bad_request: (Cow<'static, [u8]>, &'static [u8]),
@@ -39,14 +49,36 @@ fn display_request(request: &HTTPRequest, client: &HTTPClientAddress) {
     }
 }
 
+/// Attempts to read the file at `path`, or one of the `indexes` if the `path` is a directory.
+async fn read_file_or_index(
+    path: OsString,
+    indexes: &[PathBuf],
+) -> Result<(Vec<u8>, OsString), OsString> {
+    todo!()
+}
+
 /// Attempts to read the file at `path`
-async fn read_file(path: &Path) -> Option<Vec<u8>> {
-    lasync::fs::read(&path).await.ok()
+async fn read_file(mut file: File, metadata: Option<Metadata>) -> Option<Vec<u8>> {
+    let metadata = match metadata {
+        Some(metadata) => metadata,
+        None => file.metadata().await.ok()?,
+    };
+
+    if metadata.is_dir() {
+        return None;
+    }
+
+    let mut buffer = Vec::with_capacity(metadata.len() as _);
+    unsafe { buffer.set_len(metadata.len() as _) };
+    file.read_exact(&mut buffer).await.ok()?;
+
+    Some(buffer)
 }
 
 /// Parses the extension of `path` and guesses the MIME type of its contents
-fn parse_extension(path: &Path) -> &'static [u8] {
+fn parse_extension<P: AsRef<Path>>(path: &P) -> &'static [u8] {
     match path
+        .as_ref()
         .extension()
         .unwrap_or(OsStr::new(""))
         .as_encoded_bytes()
@@ -63,19 +95,30 @@ impl Static {
     /// Creates a new [`Static`] http serving app
     pub fn new<S1: Into<Cow<'static, [u8]>>, S2: Into<Cow<'static, [u8]>>>(
         base: PathBuf,
+        indexes: Vec<PathBuf>,
         bad_request: (S1, &'static [u8]),
         not_found: (S2, &'static [u8]),
     ) -> Self {
+        let mut longest_index = 0;
+        for index in &indexes {
+            let length = index.as_os_str().len();
+            if longest_index < length {
+                longest_index = length;
+            }
+        }
+
         Static {
             base,
+            indexes,
+            longest_index,
             bad_request: (bad_request.0.into(), bad_request.1),
             not_found: (not_found.0.into(), not_found.1),
         }
     }
 
     /// Attempts to parse the target into a path or returns a "400 Bad Request" response
-    fn parse_path<'a>(&'a self, target: HTTPTarget) -> Result<PathBuf, HTTPResponse<'a>> {
-        crate::path::parse(target, &self.base, 0).ok_or_else(|| {
+    fn parse_path<'a>(&'a self, target: HTTPTarget) -> Result<OsString, HTTPResponse<'a>> {
+        crate::path::parse(target, &self.base, self.longest_index).ok_or_else(|| {
             (
                 HTTPStatus::BadRequest,
                 self.bad_request.0.as_ref(),
@@ -86,15 +129,23 @@ impl Static {
     }
 
     /// Attempts to read the file at `path`
-    async fn read_file<'a>(&'a self, path: &Path) -> Result<Vec<u8>, HTTPResponse<'a>> {
-        read_file(path).await.ok_or_else(|| {
-            (
-                HTTPStatus::NotFound,
-                self.not_found.0.as_ref(),
-                self.not_found.1,
-            )
-                .into()
-        })
+    async fn read_file<'a>(
+        &'a self,
+        path: OsString,
+    ) -> Result<(Vec<u8>, OsString), (HTTPResponse<'a>, OsString)> {
+        read_file_or_index(path, &self.indexes)
+            .await
+            .map_err(|path| {
+                (
+                    (
+                        HTTPStatus::NotFound,
+                        self.not_found.0.as_ref(),
+                        self.not_found.1,
+                    )
+                        .into(),
+                    path,
+                )
+            })
     }
 }
 
@@ -126,12 +177,12 @@ impl App for Static {
             }
         };
 
-        println!("Sending {} to {}", path.display(), client);
+        println!("Sending {:?} to {}", path, client);
 
-        let body = match self.read_file(&path).await {
+        let (body, path) = match self.read_file(path).await {
             Ok(body) => body,
-            Err(response) => {
-                eprintln!("Error: {} not found or not readable", path.display());
+            Err((response, path)) => {
+                eprintln!("Error: {:?} not found or not readable", path);
                 return response;
             }
         };
@@ -191,6 +242,7 @@ impl Default for Static {
     fn default() -> Self {
         Static::new(
             "public/".into(),
+            vec!["index.html".into()],
             (include_bytes!("400.html") as &[u8], b"text/html"),
             (include_bytes!("404.html") as &[u8], b"text/html"),
         )
