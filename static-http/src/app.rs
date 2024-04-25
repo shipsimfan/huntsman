@@ -10,6 +10,7 @@ use lasync::{
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
+    os::unix::ffi::{OsStrExt, OsStringExt},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -54,7 +55,53 @@ async fn read_file_or_index(
     path: OsString,
     indexes: &[PathBuf],
 ) -> Result<(Vec<u8>, OsString), OsString> {
-    todo!()
+    let file = match File::open(&path).await {
+        Ok(file) => file,
+        Err(_) => return Err(path),
+    };
+
+    let metadata = match file.metadata().await {
+        Ok(metadata) => metadata,
+        Err(_) => return Err(path),
+    };
+
+    if metadata.is_file() {
+        return match read_file(file, Some(metadata)).await {
+            Some(content) => Ok((content, path)),
+            None => Err(path),
+        };
+    }
+
+    read_indexes(path, indexes).await
+}
+
+/// Attempts the read one of the `indexes` in `base_path`
+async fn read_indexes(
+    path: OsString,
+    indexes: &[PathBuf],
+) -> Result<(Vec<u8>, OsString), OsString> {
+    let mut path = path.into_vec();
+    path.push(b'/');
+    let base_path_length = path.len();
+
+    for index in indexes {
+        path.truncate(base_path_length);
+        path.extend_from_slice(index.as_os_str().as_encoded_bytes());
+
+        let file = match File::open(OsStr::from_bytes(&path)).await {
+            Ok(file) => file,
+            Err(_) => continue,
+        };
+
+        let path = OsString::from_vec(path);
+        return match read_file(file, None).await {
+            Some(content) => Ok((content, path)),
+            None => Err(path),
+        };
+    }
+
+    path.truncate(base_path_length - 1);
+    Err(OsString::from_vec(path))
 }
 
 /// Attempts to read the file at `path`
@@ -118,7 +165,7 @@ impl Static {
 
     /// Attempts to parse the target into a path or returns a "400 Bad Request" response
     fn parse_path<'a>(&'a self, target: HTTPTarget) -> Result<OsString, HTTPResponse<'a>> {
-        crate::path::parse(target, &self.base, self.longest_index).ok_or_else(|| {
+        crate::path::parse(target, &self.base, self.longest_index + 1).ok_or_else(|| {
             (
                 HTTPStatus::BadRequest,
                 self.bad_request.0.as_ref(),
@@ -177,8 +224,6 @@ impl App for Static {
             }
         };
 
-        println!("Sending {:?} to {}", path, client);
-
         let (body, path) = match self.read_file(path).await {
             Ok(body) => body,
             Err((response, path)) => {
@@ -186,6 +231,8 @@ impl App for Static {
                 return response;
             }
         };
+
+        println!("Sending {:?} to {}", path, client);
 
         HTTPResponse::new(HTTPStatus::OK, body, parse_extension(&path))
     }
