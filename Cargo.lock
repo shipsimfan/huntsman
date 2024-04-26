@@ -3,6 +3,19 @@
 version = 3
 
 [[package]]
+name = "argparse"
+version = "3.0.0"
+source = "git+https://github.com/shipsimfan/lib-argparse?branch=static#5ca4424b4bc6115d84065db43770118fcb041d56"
+dependencies = [
+ "macros 3.0.0",
+]
+
+[[package]]
+name = "base"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-proc-macro-util#2cd9db402c5506c21428a3644a3533f20d02d59a"
+
+[[package]]
 name = "executor"
 version = "0.1.0"
 source = "git+https://github.com/shipsimfan/lib-lasync#795855098861ee89081fbf7903f7389c6bde913e"
@@ -67,6 +80,7 @@ dependencies = [
 name = "huntsman-static-http"
 version = "0.1.0"
 dependencies = [
+ "argparse",
  "huntsman",
  "huntsman-http",
  "lasync",
@@ -85,6 +99,31 @@ dependencies = [
 name = "linux"
 version = "0.1.0"
 source = "git+https://github.com/shipsimfan/lib-linux#3a9b68420d88637b7186a8b7352df50b4185f609"
+
+[[package]]
+name = "macros"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-proc-macro-util#2cd9db402c5506c21428a3644a3533f20d02d59a"
+dependencies = [
+ "base",
+]
+
+[[package]]
+name = "macros"
+version = "3.0.0"
+source = "git+https://github.com/shipsimfan/lib-argparse?branch=static#5ca4424b4bc6115d84065db43770118fcb041d56"
+dependencies = [
+ "proc-macro-util",
+]
+
+[[package]]
+name = "proc-macro-util"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-proc-macro-util#2cd9db402c5506c21428a3644a3533f20d02d59a"
+dependencies = [
+ "base",
+ "macros 0.1.0",
+]
 
 [[package]]
 name = "uring"

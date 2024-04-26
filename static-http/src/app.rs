@@ -16,7 +16,7 @@ use std::{
 };
 
 /// An HTTP app which serves static files from a path
-pub struct Static {
+pub struct StaticHuntsman {
     /// The path to server static files from
     base: PathBuf,
 
@@ -138,7 +138,7 @@ fn parse_extension<P: AsRef<Path>>(path: &P) -> &'static [u8] {
     }
 }
 
-impl Static {
+impl StaticHuntsman {
     /// Creates a new [`Static`] http serving app
     pub fn new<S1: Into<Cow<'static, [u8]>>, S2: Into<Cow<'static, [u8]>>>(
         base: PathBuf,
@@ -154,7 +154,7 @@ impl Static {
             }
         }
 
-        Static {
+        StaticHuntsman {
             base,
             indexes,
             longest_index,
@@ -196,7 +196,7 @@ impl Static {
     }
 }
 
-impl App for Static {
+impl App for StaticHuntsman {
     type Protocol = HTTP;
 
     type Client = HTTPClientAddress;
@@ -285,9 +285,9 @@ impl App for Static {
     }
 }
 
-impl Default for Static {
+impl Default for StaticHuntsman {
     fn default() -> Self {
-        Static::new(
+        StaticHuntsman::new(
             "public/".into(),
             vec!["index.html".into()],
             (include_bytes!("400.html") as &[u8], b"text/html"),
