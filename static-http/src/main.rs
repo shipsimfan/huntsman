@@ -41,10 +41,5 @@ fn main() {
 
     let app = StaticHuntsman::new(args.base, args.indexes, bad_request, not_found);
 
-    huntsman::run(
-        app,
-        huntsman::Options::default(),
-        huntsman_http::HTTPOptions::default(),
-    )
-    .unwrap()
+    huntsman::run(app, huntsman::Options::default(), args.http_options).unwrap()
 }
