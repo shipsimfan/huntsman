@@ -11,9 +11,11 @@ use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
     os::unix::ffi::{OsStrExt, OsStringExt},
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::Arc,
 };
+
+use crate::path::parse_extension;
 
 /// An HTTP app which serves static files from a path
 pub struct StaticHuntsman {
@@ -120,22 +122,6 @@ async fn read_file(mut file: File, metadata: Option<Metadata>) -> Option<Vec<u8>
     file.read_exact(&mut buffer).await.ok()?;
 
     Some(buffer)
-}
-
-/// Parses the extension of `path` and guesses the MIME type of its contents
-fn parse_extension<P: AsRef<Path>>(path: &P) -> &'static [u8] {
-    match path
-        .as_ref()
-        .extension()
-        .unwrap_or(OsStr::new(""))
-        .as_encoded_bytes()
-    {
-        b"css" => b"text/css",
-        b"htm" | b"html" => b"text/html",
-        b"js" | b"mjs" => b"text/javascript",
-        b"txt" => b"text/plain",
-        _ => b"application/octet-stream",
-    }
 }
 
 impl StaticHuntsman {
@@ -282,16 +268,5 @@ impl App for StaticHuntsman {
             "Error: An error occurred while sending a response to {} - {}",
             client, error
         );
-    }
-}
-
-impl Default for StaticHuntsman {
-    fn default() -> Self {
-        StaticHuntsman::new(
-            "public/".into(),
-            vec!["index.html".into()],
-            (include_bytes!("400.html") as &[u8], b"text/html"),
-            (include_bytes!("404.html") as &[u8], b"text/html"),
-        )
     }
 }

@@ -1,5 +1,9 @@
 use huntsman_http::HTTPTarget;
-use std::{ffi::OsString, os::unix::ffi::OsStringExt, path::Path};
+use std::{
+    ffi::{OsStr, OsString},
+    os::unix::ffi::OsStringExt,
+    path::Path,
+};
 
 /// Parses a `url` into an acceptable path under `base`
 ///
@@ -102,4 +106,20 @@ pub fn parse(url: HTTPTarget, base: &Path, extra_padding: usize) -> Option<OsStr
     // Remove the final trailing "/"
     path.pop();
     Some(OsString::from_vec(path))
+}
+
+/// Parses the extension of `path` and guesses the MIME type of its contents
+pub fn parse_extension<P: AsRef<Path>>(path: P) -> &'static [u8] {
+    match path
+        .as_ref()
+        .extension()
+        .unwrap_or(OsStr::new(""))
+        .as_encoded_bytes()
+    {
+        b"css" => b"text/css",
+        b"htm" | b"html" => b"text/html",
+        b"js" | b"mjs" => b"text/javascript",
+        b"txt" => b"text/plain",
+        _ => b"application/octet-stream",
+    }
 }
