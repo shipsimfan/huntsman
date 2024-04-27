@@ -38,11 +38,11 @@ parser! {
                       "Specify a default file to serve when a directory is requested"
                       |options: StaticHuntsmanOptions, path: PathBuf| { options.indexes.push(path); }
         ).group("SERVING FLAGS").repeatable(true),
-        parsing_flag!(, "bad-request" "FILE" "missing FILE for bad-request"
+        parsing_flag!("400", "bad-request" "FILE" "missing FILE for bad-request"
                       "Specify the file to serve when a request is bad"
                       |options: StaticHuntsmanOptions, path: PathBuf| { options.bad_request = Some(path); }
         ).group("SERVING FLAGS"),
-        parsing_flag!(, "not-found" "FILE" "missing FILE for not-found"
+        parsing_flag!("404", "not-found" "FILE" "missing FILE for not-found"
                       "Specify the file to serve when a requested file cannot be found"
                       |options: StaticHuntsmanOptions, path: PathBuf| { options.not_found = Some(path); }
         ).group("SERVING FLAGS"),
