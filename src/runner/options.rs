@@ -40,9 +40,14 @@ impl<Protocol: crate::Protocol> Options<Protocol> {
         self.connections_per_worker = connections_per_worker;
     }
 
-    /// Sets the address to listen for connection on
+    /// Sets the address to listen for connections on
     pub fn set_address(&mut self, address: Protocol::ListenAddress) {
         self.address = address;
+    }
+
+    /// Gets the address to listen for connections on mutably
+    pub fn address_mut(&mut self) -> &mut Protocol::ListenAddress {
+        &mut self.address
     }
 }
 

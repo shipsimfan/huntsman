@@ -3,7 +3,7 @@ use lasync::net::{TCPListener, TCPStream};
 
 /// The sockets to listen for connections on
 pub(super) struct Listeners {
-    /// The listener for unsecured HTTP/1.1 connections
+    /// The listener for insecure HTTP/1.1 connections
     http: Option<TCPListener>,
 }
 

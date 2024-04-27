@@ -4,7 +4,7 @@ use std::{fmt::Display, net::SocketAddr};
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HTTPProtocol {
-    /// Unsecure HTTP/1.1
+    /// Insecure HTTP/1.1
     HTTP,
 
     /// Secured HTTP/1.1
