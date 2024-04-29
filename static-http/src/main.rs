@@ -1,9 +1,11 @@
 use app::StaticHuntsman;
+use log::ListenerDisplay;
 use path::parse_extension;
 use std::{borrow::Cow, path::PathBuf};
 
 mod app;
 mod args;
+mod log;
 mod path;
 
 /// Attempts to read a file and parse it's extension
@@ -39,7 +41,13 @@ fn main() {
     let bad_request = read_file(args.bad_request, include_bytes!("400.html"));
     let not_found = read_file(args.not_found, include_bytes!("404.html"));
 
-    let app = StaticHuntsman::new(args.base, args.indexes, bad_request, not_found);
+    let app = match StaticHuntsman::new(args.base, args.indexes, bad_request, not_found) {
+        Ok(app) => app,
+        Err(error) => {
+            eprintln!("Error: Failed to create logger - {}", error);
+            std::process::exit(1);
+        }
+    };
 
     huntsman::run(app, args.huntsman_options, args.http_options).unwrap()
 }

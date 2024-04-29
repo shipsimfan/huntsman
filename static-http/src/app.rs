@@ -1,12 +1,13 @@
+use crate::{path::parse_extension, ListenerDisplay};
 use huntsman::{App, Protocol};
 use huntsman_http::{
-    HTTPClientAddress, HTTPParseError, HTTPRequest, HTTPResponse, HTTPStatus, HTTPTarget,
-    ListenAddress, HTTP,
+    HTTPClientAddress, HTTPParseError, HTTPResponse, HTTPStatus, HTTPTarget, ListenAddress, HTTP,
 };
 use lasync::{
     fs::{File, Metadata},
     io::Read,
 };
+use oak::{FilterListType, LogController, LogLevel, Logger, ReadableLogFormatter, StdoutLogOutput};
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
@@ -14,8 +15,6 @@ use std::{
     path::PathBuf,
     sync::Arc,
 };
-
-use crate::path::parse_extension;
 
 /// An HTTP app which serves static files from a path
 pub struct StaticHuntsman {
@@ -33,23 +32,15 @@ pub struct StaticHuntsman {
 
     /// The body to respond with when a file cannot be found for a request
     not_found: (Cow<'static, [u8]>, &'static [u8]),
-}
 
-/// Displays the target and fields of a request
-fn display_request(request: &HTTPRequest, client: &HTTPClientAddress) {
-    println!();
-    println!(
-        "{} request for {} from {}",
-        request.method(),
-        request.target(),
-        client
-    );
-    for field in request.fields() {
-        println!("  {}", field);
-    }
-    if request.body().len() > 0 {
-        println!("{}", String::from_utf8_lossy(request.body()));
-    }
+    /// Log for connections
+    connections_logger: Logger,
+
+    /// Log for requests
+    access_logger: Logger,
+
+    /// Log for errors
+    error_logger: Logger,
 }
 
 /// Attempts to read the file at `path`, or one of the `indexes` if the `path` is a directory.
@@ -131,7 +122,7 @@ impl StaticHuntsman {
         indexes: Vec<PathBuf>,
         bad_request: (S1, &'static [u8]),
         not_found: (S2, &'static [u8]),
-    ) -> Self {
+    ) -> std::io::Result<Self> {
         let mut longest_index = 0;
         for index in &indexes {
             let length = index.as_os_str().len();
@@ -140,13 +131,32 @@ impl StaticHuntsman {
             }
         }
 
-        StaticHuntsman {
+        let log_controller = LogController::new::<_, &str>(
+            "Static Huntsman",
+            LogLevel::Debug,
+            None,
+            FilterListType::Blacklist,
+            Vec::new(),
+            vec![Box::new(StdoutLogOutput::new(
+                ReadableLogFormatter::new(),
+                "stdout",
+            ))],
+        )?;
+
+        let connections_logger = log_controller.create_logger("connections");
+        let access_logger = log_controller.create_logger("access");
+        let error_logger = log_controller.create_logger("error");
+
+        Ok(StaticHuntsman {
             base,
             indexes,
             longest_index,
             bad_request: (bad_request.0.into(), bad_request.1),
             not_found: (not_found.0.into(), not_found.1),
-        }
+            connections_logger,
+            access_logger,
+            error_logger,
+        })
     }
 
     /// Attempts to parse the target into a path or returns a "400 Bad Request" response
@@ -188,11 +198,8 @@ impl App for StaticHuntsman {
     type Client = HTTPClientAddress;
 
     async fn on_server_start(self: &Arc<Self>, address: ListenAddress) {
-        println!("Server listening on:");
-
-        if let Some(http) = &address.http {
-            println!("  {}", http);
-        }
+        self.connections_logger
+            .log(LogLevel::Info, &ListenerDisplay(&address));
     }
 
     async fn handle_request<'a, 'b>(
@@ -200,12 +207,13 @@ impl App for StaticHuntsman {
         client: &'a mut Self::Client,
         request: <Self::Protocol as Protocol>::Request<'b>,
     ) -> HTTPResponse<'a> {
-        display_request(&request, client);
-
         let path = match self.parse_path(request.target()) {
             Ok(path) => path,
             Err(response) => {
-                eprintln!("Error: Bad path received from {}", client);
+                self.error_logger.log(
+                    LogLevel::Error,
+                    &format_args!("Bad path received from {}", client),
+                );
                 return response;
             }
         };
@@ -213,11 +221,15 @@ impl App for StaticHuntsman {
         let (body, path) = match self.read_file(path).await {
             Ok(body) => body,
             Err((response, path)) => {
-                eprintln!("Error: {:?} not found or not readable", path);
+                self.error_logger.log(
+                    LogLevel::Error,
+                    &format_args!("{:?} not found or not readable", path),
+                );
                 return response;
             }
         };
 
+        // TODO: Replace with access log
         println!("Sending {:?} to {}", path, client);
 
         HTTPResponse::new(HTTPStatus::OK, body, parse_extension(&path))
@@ -227,18 +239,22 @@ impl App for StaticHuntsman {
         self: &Arc<Self>,
         source: HTTPClientAddress,
     ) -> Option<HTTPClientAddress> {
-        println!("Client connected from {}", source);
+        self.connections_logger.log(
+            LogLevel::Info,
+            &format_args!("Client connected from {}", source),
+        );
         Some(source)
     }
 
     async fn on_client_disconnect(self: &Arc<Self>, client: &mut HTTPClientAddress) {
-        println!("{} disconnected", client);
+        self.connections_logger
+            .log(LogLevel::Info, &format_args!("{} disconnected", client));
     }
 
     async fn accept_error(self: &Arc<Self>, error: huntsman_http::Error) {
-        eprintln!(
-            "Error: An error occurred while accepting a client - {}",
-            error
+        self.error_logger.log(
+            LogLevel::Error,
+            &format_args!("An error occurred while accepting a client - {}", error),
         );
     }
 
@@ -247,9 +263,12 @@ impl App for StaticHuntsman {
         client: &'a mut Self::Client,
         error: HTTPParseError,
     ) -> Option<HTTPResponse<'a>> {
-        eprintln!(
-            "Error: An error occurred while parsing a request from {} - {}",
-            client, error
+        self.error_logger.log(
+            LogLevel::Error,
+            &format_args!(
+                "An error occurred while parsing a request from {} - {}",
+                client, error
+            ),
         );
 
         Some(match error {
@@ -264,9 +283,12 @@ impl App for StaticHuntsman {
     }
 
     async fn send_error(self: &Arc<Self>, client: &mut Self::Client, error: huntsman_http::Error) {
-        eprintln!(
-            "Error: An error occurred while sending a response to {} - {}",
-            client, error
+        self.error_logger.log(
+            LogLevel::Error,
+            &format_args!(
+                "An error occurred while sending a response to {} - {}",
+                client, error
+            ),
         );
     }
 }

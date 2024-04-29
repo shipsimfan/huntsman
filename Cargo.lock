@@ -84,6 +84,7 @@ dependencies = [
  "huntsman",
  "huntsman-http",
  "lasync",
+ "oak",
 ]
 
 [[package]]
@@ -115,6 +116,11 @@ source = "git+https://github.com/shipsimfan/lib-argparse?branch=static#5ca4424b4
 dependencies = [
  "proc-macro-util",
 ]
+
+[[package]]
+name = "oak"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/oak#b23ca4975c0dcf86c926e2c421c53af2dff25845"
 
 [[package]]
 name = "proc-macro-util"

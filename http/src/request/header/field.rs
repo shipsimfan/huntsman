@@ -35,7 +35,6 @@ impl<'a> HTTPRequestField<'a> {
             .await?;
 
         if stream.next().await? != b'\n' {
-            println!("newline?");
             return Err(HTTPParseError::InvalidField);
         }
 

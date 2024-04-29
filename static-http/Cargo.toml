@@ -16,3 +16,4 @@ huntsman.path = ".."
 huntsman-http.path = "../http"
 
 argparse = { git = "https://github.com/shipsimfan/lib-argparse", branch = "static" }
+oak.git = "https://github.com/shipsimfan/oak"
