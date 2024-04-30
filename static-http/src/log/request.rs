@@ -56,7 +56,7 @@ impl<'a> std::fmt::Display for RequestDisplay<'a> {
             if let Some(response_path) = response_path {
                 write!(f, " returning \"{}\"", response_path.display())?;
             }
-            write!(f, " )")?;
+            write!(f, ")")?;
         }
 
         if let Some(headers) = self.headers {
