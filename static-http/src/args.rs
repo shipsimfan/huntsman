@@ -1,5 +1,5 @@
 use crate::LoggerOutput;
-use argparse::{help_flag, parser, parsing_flag, version_flag};
+use argparse::{help_flag, parser, parsing_flag, simple_flag, version_flag};
 use huntsman_http::{HTTPOptions, HTTP};
 use oak::{FilterListType, LogLevel};
 use std::{net::SocketAddr, num::NonZeroUsize, path::PathBuf, time::Duration};
@@ -152,6 +152,32 @@ parser! {
                           options.http_options.write_timeout = timeout;
                       }
         ).group("HTTP FLAGS"),
+
+        // Logging Flags
+        simple_flag!(, "log-headers"
+                     "Enable logging request headers"
+                     |options: StaticHuntsmanOptions, _| { options.log_headers = true; }
+        ).group("LOGGING FLAGS"),
+        simple_flag!(, "log-bodies"
+                     "Enable logging request bodies"
+                     |options: StaticHuntsmanOptions, _| { options.log_bodies = true; }
+        ).group("LOGGING FLAGS"),
+        simple_flag!(, "log-responses"
+                     "Enable logging responses statuses and paths"
+                     |options: StaticHuntsmanOptions, _| { options.log_reponses = true; }
+        ).group("LOGGING FLAGS"),
+        // TODO: min-log-level
+        // TODO: max-log-level
+        // TODO: log-filter-type
+        parsing_flag!(, "log-filter" "SCOPE" "missing SCOPE for log-filter"
+                     "Add SCOPE to the log filter list"
+                     |options: StaticHuntsmanOptions, scope: String| { options.log_filter.push(scope); }
+        ).group("LOGGING FLAGS"),
+        parsing_flag!(, "log-output" "OUTPUT" "missing OUTPUT for log-output"
+                      ["Add OUTPUT as a log output",
+                       "Can be set to \"stdout\", \"stderr\", or a path"]
+                      |options: StaticHuntsmanOptions, output: LoggerOutput| { options.log_outputs.push(output); }
+        ).group("LOGGING FLAGS"),
 
         // Other Flags
         help_flag!("h", "help").group("OTHER FLAGS"),
