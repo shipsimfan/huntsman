@@ -1,5 +1,7 @@
+use crate::LoggerOutput;
 use argparse::{help_flag, parser, parsing_flag, version_flag};
 use huntsman_http::{HTTPOptions, HTTP};
+use oak::{FilterListType, LogLevel};
 use std::{net::SocketAddr, num::NonZeroUsize, path::PathBuf, time::Duration};
 
 /// Options that control how the server will run
@@ -24,6 +26,31 @@ pub struct StaticHuntsmanOptions {
     /* HTTP Flags */
     /// The HTTP options
     pub http_options: HTTPOptions,
+
+    /* Logging Flags */
+    /// Should request headers be logged?
+    pub log_headers: bool,
+
+    /// Should request bodies be logged?
+    pub log_bodies: bool,
+
+    /// Should response codes and paths be logged?
+    pub log_reponses: bool,
+
+    /// The minimum severity to log
+    pub min_log_level: Option<LogLevel>,
+
+    /// The maximum severity to log
+    pub max_log_level: Option<LogLevel>,
+
+    /// The scope filter list type
+    pub log_filter_type: FilterListType,
+
+    /// The scope filter list
+    pub log_filter: Vec<String>,
+
+    /// The outputs for logging
+    pub log_outputs: Vec<LoggerOutput>,
 }
 
 parser! {
@@ -146,6 +173,14 @@ impl Default for StaticHuntsmanOptions {
             not_found: None,
             huntsman_options: huntsman::Options::default(),
             http_options: HTTPOptions::default(),
+            log_headers: false,
+            log_bodies: false,
+            log_reponses: false,
+            min_log_level: None,
+            max_log_level: None,
+            log_filter_type: FilterListType::Blacklist,
+            log_filter: Vec::new(),
+            log_outputs: Vec::new(),
         }
     }
 }

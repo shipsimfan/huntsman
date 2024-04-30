@@ -1,5 +1,5 @@
 use app::StaticHuntsman;
-use log::{ListenerDisplay, RequestDisplay};
+use log::{ListenerDisplay, LoggerOutput, RequestDisplay};
 use path::parse_extension;
 use std::{borrow::Cow, path::PathBuf};
 
