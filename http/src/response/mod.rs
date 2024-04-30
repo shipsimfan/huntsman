@@ -17,6 +17,9 @@ pub struct HTTPResponse<'a> {
 
     /// The body of the response
     body: Option<HTTPResponseBody<'a>>,
+
+    /// The status this response was created with
+    status: HTTPStatus,
 }
 
 impl<'a> HTTPResponse<'a> {
@@ -36,7 +39,11 @@ impl<'a> HTTPResponse<'a> {
         let mut header = status.generate();
         header.extend_from_slice(SERVER.as_bytes());
 
-        HTTPResponse { header, body: None }
+        HTTPResponse {
+            header,
+            body: None,
+            status,
+        }
     }
 
     /// Gets the body of this response
@@ -47,6 +54,11 @@ impl<'a> HTTPResponse<'a> {
     /// Gets the type of this reponse's body's content
     pub fn content_type(&self) -> Option<&[u8]> {
         self.body.as_ref().map(HTTPResponseBody::content_type)
+    }
+
+    /// Gets the status of this response
+    pub fn status(&self) -> HTTPStatus {
+        self.status
     }
 
     /// Adds a field to the end of the fields for this response

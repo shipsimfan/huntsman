@@ -1,4 +1,4 @@
-use crate::{path::parse_extension, ListenerDisplay};
+use crate::{path::parse_extension, ListenerDisplay, RequestDisplay};
 use huntsman::{App, Protocol};
 use huntsman_http::{
     HTTPClientAddress, HTTPParseError, HTTPResponse, HTTPStatus, HTTPTarget, ListenAddress, HTTP,
@@ -41,6 +41,15 @@ pub struct StaticHuntsman {
 
     /// Log for errors
     error_logger: Logger,
+
+    /// Should request headers be logged in the access logger?
+    log_headers: bool,
+
+    /// Should request bodies be logged in the access logger?
+    log_bodies: bool,
+
+    /// Should response codes and paths be logged in the access logger?
+    log_responses: bool,
 }
 
 /// Attempts to read the file at `path`, or one of the `indexes` if the `path` is a directory.
@@ -122,6 +131,9 @@ impl StaticHuntsman {
         indexes: Vec<PathBuf>,
         bad_request: (S1, &'static [u8]),
         not_found: (S2, &'static [u8]),
+        log_headers: bool,
+        log_bodies: bool,
+        log_responses: bool,
     ) -> std::io::Result<Self> {
         let mut longest_index = 0;
         for index in &indexes {
@@ -156,6 +168,9 @@ impl StaticHuntsman {
             connections_logger,
             access_logger,
             error_logger,
+            log_headers,
+            log_bodies,
+            log_responses,
         })
     }
 
@@ -190,6 +205,40 @@ impl StaticHuntsman {
                 )
             })
     }
+
+    /// Handles a request from a client
+    async fn do_handle_request<'a, 'b>(
+        self: &'a Arc<Self>,
+        client: HTTPClientAddress,
+        request: &<HTTP as Protocol>::Request<'b>,
+    ) -> (HTTPResponse<'a>, Option<PathBuf>) {
+        let path = match self.parse_path(request.target()) {
+            Ok(path) => path,
+            Err(response) => {
+                self.error_logger.log(
+                    LogLevel::Error,
+                    &format_args!("Bad path received from {}", client),
+                );
+                return (response, None);
+            }
+        };
+
+        let (body, path) = match self.read_file(path).await {
+            Ok(body) => body,
+            Err((response, path)) => {
+                self.error_logger.log(
+                    LogLevel::Error,
+                    &format_args!("{:?} not found or not readable", path),
+                );
+                return (response, None);
+            }
+        };
+
+        (
+            HTTPResponse::new(HTTPStatus::OK, body, parse_extension(&path)),
+            Some(path.into()),
+        )
+    }
 }
 
 impl App for StaticHuntsman {
@@ -207,32 +256,36 @@ impl App for StaticHuntsman {
         client: &'a mut Self::Client,
         request: <Self::Protocol as Protocol>::Request<'b>,
     ) -> HTTPResponse<'a> {
-        let path = match self.parse_path(request.target()) {
-            Ok(path) => path,
-            Err(response) => {
-                self.error_logger.log(
-                    LogLevel::Error,
-                    &format_args!("Bad path received from {}", client),
-                );
-                return response;
-            }
-        };
+        let response = self.do_handle_request(*client, &request).await;
 
-        let (body, path) = match self.read_file(path).await {
-            Ok(body) => body,
-            Err((response, path)) => {
-                self.error_logger.log(
-                    LogLevel::Error,
-                    &format_args!("{:?} not found or not readable", path),
-                );
-                return response;
-            }
-        };
+        self.access_logger.log(
+            LogLevel::Info,
+            &RequestDisplay::new(
+                request.method(),
+                *client,
+                request.target(),
+                if self.log_headers {
+                    Some(request.fields())
+                } else {
+                    None
+                },
+                if self.log_bodies {
+                    Some(request.body())
+                } else {
+                    None
+                },
+                if self.log_responses {
+                    Some((
+                        response.0.status().code(),
+                        response.1.as_deref().map(|path| path),
+                    ))
+                } else {
+                    None
+                },
+            ),
+        );
 
-        // TODO: Replace with access log
-        println!("Sending {:?} to {}", path, client);
-
-        HTTPResponse::new(HTTPStatus::OK, body, parse_extension(&path))
+        response.0
     }
 
     async fn on_client_connect(

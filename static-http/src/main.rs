@@ -1,5 +1,5 @@
 use app::StaticHuntsman;
-use log::ListenerDisplay;
+use log::{ListenerDisplay, RequestDisplay};
 use path::parse_extension;
 use std::{borrow::Cow, path::PathBuf};
 
@@ -41,7 +41,15 @@ fn main() {
     let bad_request = read_file(args.bad_request, include_bytes!("400.html"));
     let not_found = read_file(args.not_found, include_bytes!("404.html"));
 
-    let app = match StaticHuntsman::new(args.base, args.indexes, bad_request, not_found) {
+    let app = match StaticHuntsman::new(
+        args.base,
+        args.indexes,
+        bad_request,
+        not_found,
+        true,
+        true,
+        true,
+    ) {
         Ok(app) => app,
         Err(error) => {
             eprintln!("Error: Failed to create logger - {}", error);
