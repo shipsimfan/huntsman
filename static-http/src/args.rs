@@ -38,7 +38,7 @@ pub struct StaticHuntsmanOptions {
     pub log_reponses: bool,
 
     /// The minimum severity to log
-    pub min_log_level: Option<LogLevel>,
+    pub min_log_level: LogLevel,
 
     /// The maximum severity to log
     pub max_log_level: Option<LogLevel>,
@@ -166,18 +166,33 @@ parser! {
                      "Enable logging responses statuses and paths"
                      |options: StaticHuntsmanOptions, _| { options.log_reponses = true; }
         ).group("LOGGING FLAGS"),
-        // TODO: min-log-level
-        // TODO: max-log-level
-        // TODO: log-filter-type
+        parsing_flag!(, "min-log-level" "LEVEL" "missing LEVEL for min-log-level"
+                      ["Sets the minimum severity of messages to log",
+                       "LEVEL can be \"trace\", \"debug\", \"info\", \"warn\", \"err\", or \"fatal\"",
+                       "Defaults to \"info\""]
+                      |options: StaticHuntsmanOptions, level: LogLevel| { options.min_log_level = level; }
+        ).group("LOGGING FLAGS"),
+        parsing_flag!(, "max-log-level" "LEVEL" "missing LEVEL for max-log-level"
+                      ["Sets the maximum severity of messages to log",
+                       "LEVEL can be \"trace\", \"debug\", \"info\", \"warn\", \"err\", or \"fatal\"",
+                       "Defaults to allowing all log messages"]
+                      |options: StaticHuntsmanOptions, level: LogLevel| { options.max_log_level = Some(level); }
+        ).group("LOGGING FLAGS"),
+        parsing_flag!(, "log-filter-type" "TYPE" "missing TYPE for log-filter-type"
+                      ["Sets the log filter type",
+                       "TYPE can be \"blacklist\" or \"whitelist\"",
+                       "Defaults to \"blacklist\""]
+                      |options: StaticHuntsmanOptions, filter_type: FilterListType| { options.log_filter_type = filter_type; }
+        ),
         parsing_flag!(, "log-filter" "SCOPE" "missing SCOPE for log-filter"
                      "Add SCOPE to the log filter list"
                      |options: StaticHuntsmanOptions, scope: String| { options.log_filter.push(scope); }
-        ).group("LOGGING FLAGS"),
+        ).group("LOGGING FLAGS").repeatable(true),
         parsing_flag!(, "log-output" "OUTPUT" "missing OUTPUT for log-output"
                       ["Add OUTPUT as a log output",
                        "Can be set to \"stdout\", \"stderr\", or a path"]
                       |options: StaticHuntsmanOptions, output: LoggerOutput| { options.log_outputs.push(output); }
-        ).group("LOGGING FLAGS"),
+        ).group("LOGGING FLAGS").repeatable(true),
 
         // Other Flags
         help_flag!("h", "help").group("OTHER FLAGS"),
@@ -202,7 +217,7 @@ impl Default for StaticHuntsmanOptions {
             log_headers: false,
             log_bodies: false,
             log_reponses: false,
-            min_log_level: None,
+            min_log_level: LogLevel::Info,
             max_log_level: None,
             log_filter_type: FilterListType::Blacklist,
             log_filter: Vec::new(),

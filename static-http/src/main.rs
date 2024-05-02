@@ -1,5 +1,6 @@
 use app::StaticHuntsman;
 use log::{ListenerDisplay, LoggerOutput, RequestDisplay};
+use oak::LogController;
 use path::parse_extension;
 use std::{borrow::Cow, path::PathBuf};
 
@@ -41,21 +42,44 @@ fn main() {
     let bad_request = read_file(args.bad_request, include_bytes!("400.html"));
     let not_found = read_file(args.not_found, include_bytes!("404.html"));
 
-    let app = match StaticHuntsman::new(
-        args.base,
-        args.indexes,
-        bad_request,
-        not_found,
-        true,
-        true,
-        true,
+    let log_outputs = match args
+        .log_outputs
+        .into_iter()
+        .map(|output| output.try_into())
+        .collect::<Result<_, _>>()
+    {
+        Ok(log_outputs) => log_outputs,
+        Err(error) => {
+            eprintln!("Unable to open log output - {}", error);
+            std::process::exit(1);
+        }
+    };
+
+    let log_controller = match LogController::new(
+        "Static Huntsman",
+        args.min_log_level,
+        args.max_log_level,
+        args.log_filter_type,
+        args.log_filter,
+        log_outputs,
     ) {
-        Ok(app) => app,
+        Ok(controller) => controller,
         Err(error) => {
             eprintln!("Error: Failed to create logger - {}", error);
             std::process::exit(1);
         }
     };
+
+    let app = StaticHuntsman::new(
+        args.base,
+        args.indexes,
+        bad_request,
+        not_found,
+        log_controller,
+        args.log_headers,
+        args.log_bodies,
+        args.log_reponses,
+    );
 
     huntsman::run(app, args.huntsman_options, args.http_options).unwrap()
 }

@@ -1,3 +1,4 @@
+use oak::{FileLogOutput, LogOutput, ReadableLogFormatter, StderrLogOutput, StdoutLogOutput};
 use std::{convert::Infallible, path::PathBuf, str::FromStr};
 
 /// An output for logs
@@ -21,5 +22,19 @@ impl FromStr for LoggerOutput {
             "stdout" => LoggerOutput::Stdout,
             _ => LoggerOutput::File(s.into()),
         })
+    }
+}
+
+impl TryInto<Box<dyn LogOutput>> for LoggerOutput {
+    type Error = std::io::Error;
+
+    fn try_into(self) -> std::io::Result<Box<dyn LogOutput>> {
+        match self {
+            LoggerOutput::Stdout => Ok(StdoutLogOutput::default()),
+            LoggerOutput::Stderr => Ok(StderrLogOutput::default()),
+            LoggerOutput::File(path) => {
+                FileLogOutput::open(path, ReadableLogFormatter::new(), "file")
+            }
+        }
     }
 }

@@ -7,7 +7,7 @@ use lasync::{
     fs::{File, Metadata},
     io::Read,
 };
-use oak::{FilterListType, LogController, LogLevel, Logger, ReadableLogFormatter, StdoutLogOutput};
+use oak::{LogController, LogLevel, Logger};
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
@@ -131,10 +131,11 @@ impl StaticHuntsman {
         indexes: Vec<PathBuf>,
         bad_request: (S1, &'static [u8]),
         not_found: (S2, &'static [u8]),
+        log_controller: Arc<LogController>,
         log_headers: bool,
         log_bodies: bool,
         log_responses: bool,
-    ) -> std::io::Result<Self> {
+    ) -> Self {
         let mut longest_index = 0;
         for index in &indexes {
             let length = index.as_os_str().len();
@@ -143,23 +144,11 @@ impl StaticHuntsman {
             }
         }
 
-        let log_controller = LogController::new::<_, &str>(
-            "Static Huntsman",
-            LogLevel::Debug,
-            None,
-            FilterListType::Blacklist,
-            Vec::new(),
-            vec![Box::new(StdoutLogOutput::new(
-                ReadableLogFormatter::new(),
-                "stdout",
-            ))],
-        )?;
-
         let connections_logger = log_controller.create_logger("connections");
         let access_logger = log_controller.create_logger("access");
         let error_logger = log_controller.create_logger("error");
 
-        Ok(StaticHuntsman {
+        StaticHuntsman {
             base,
             indexes,
             longest_index,
@@ -171,7 +160,7 @@ impl StaticHuntsman {
             log_headers,
             log_bodies,
             log_responses,
-        })
+        }
     }
 
     /// Attempts to parse the target into a path or returns a "400 Bad Request" response

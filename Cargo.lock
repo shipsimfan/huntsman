@@ -120,7 +120,7 @@ dependencies = [
 [[package]]
 name = "oak"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/oak#b23ca4975c0dcf86c926e2c421c53af2dff25845"
+source = "git+https://github.com/shipsimfan/oak#efd1380788eb1f8ba660043e28a4d372ebb0bbbf"
 
 [[package]]
 name = "proc-macro-util"
