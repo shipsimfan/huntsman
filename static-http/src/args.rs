@@ -1,5 +1,5 @@
 use crate::LoggerOutput;
-use argparse::{help_flag, parser, parsing_flag, simple_flag, version_flag};
+use argparse::{config_flag, help_flag, parser, parsing_flag, simple_flag, version_flag};
 use huntsman_http::{HTTPOptions, HTTP};
 use oak::{FilterListType, LogLevel};
 use std::{net::SocketAddr, num::NonZeroUsize, path::PathBuf, time::Duration};
@@ -195,6 +195,7 @@ parser! {
         ).group("LOGGING FLAGS").repeatable(true),
 
         // Other Flags
+        config_flag!(, "config").group("OTHER FLAGS"),
         help_flag!("h", "help").group("OTHER FLAGS"),
         version_flag!(, "version" concat!("Huntsman Static Server v", env!("CARGO_PKG_VERSION"))).group("OTHER FLAGS"),
     ]
