@@ -202,7 +202,9 @@ parser! {
 
 /// Parse the command line arguments into options
 pub fn parse<'a>() -> Result<Option<StaticHuntsmanOptions>, argparse::Error<'a>> {
-    PARSER.parse_env(StaticHuntsmanOptions::default())
+    PARSER
+        .usage("USAGE:\n    %0 [OPTIONS]...")
+        .parse_env(StaticHuntsmanOptions::default())
 }
 
 impl Default for StaticHuntsmanOptions {
