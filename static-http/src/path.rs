@@ -120,6 +120,7 @@ pub fn parse_extension<P: AsRef<Path>>(path: P) -> &'static [u8] {
         b"htm" | b"html" => b"text/html",
         b"js" | b"mjs" => b"text/javascript",
         b"txt" => b"text/plain",
+        b"wasm" => b"application/wasm",
         _ => b"application/octet-stream",
     }
 }
