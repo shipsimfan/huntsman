@@ -121,6 +121,7 @@ pub fn parse_extension<P: AsRef<Path>>(path: P) -> &'static [u8] {
         b"js" | b"mjs" => b"text/javascript",
         b"txt" => b"text/plain",
         b"wasm" => b"application/wasm",
+        b"png" => b"image/png",
         _ => b"application/octet-stream",
     }
 }
