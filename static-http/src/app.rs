@@ -1,4 +1,4 @@
-use crate::{path::parse_extension, ListenerDisplay, RequestDisplay};
+use crate::{error::HandleError, path::parse_extension, ListenerDisplay, RequestDisplay};
 use huntsman::{App, Protocol};
 use huntsman_http::{
     HTTPClientAddress, HTTPParseError, HTTPResponse, HTTPStatus, HTTPTarget, ListenAddress, HTTP,
@@ -200,33 +200,19 @@ impl StaticHuntsman {
         self: &'a Arc<Self>,
         client: HTTPClientAddress,
         request: &<HTTP as Protocol>::Request<'b>,
-    ) -> (HTTPResponse<'a>, Option<PathBuf>) {
-        let path = match self.parse_path(request.target()) {
-            Ok(path) => path,
-            Err(response) => {
-                self.error_logger.log(
-                    LogLevel::Error,
-                    &format_args!("Bad path received from {}", client),
-                );
-                return (response, None);
-            }
-        };
+    ) -> Result<(HTTPResponse<'a>, Option<PathBuf>), HandleError<'a>> {
+        let path = self
+            .parse_path(request.target())
+            .map_err(|response| HandleError::bad_path(response, client))?;
 
-        let (body, path) = match self.read_file(path).await {
-            Ok(body) => body,
-            Err((response, path)) => {
-                self.error_logger.log(
-                    LogLevel::Error,
-                    &format_args!("{:?} not found or not readable", path),
-                );
-                return (response, None);
-            }
-        };
+        let (body, path) = self.read_file(path).await.map_err(|(response, path)| {
+            HandleError::not_found_or_unreadable(response, path, client)
+        })?;
 
-        (
+        Ok((
             HTTPResponse::new(HTTPStatus::OK, body, parse_extension(&path)),
             Some(path.into()),
-        )
+        ))
     }
 }
 
@@ -245,7 +231,7 @@ impl App for StaticHuntsman {
         client: &'a mut Self::Client,
         request: <Self::Protocol as Protocol>::Request<'b>,
     ) -> HTTPResponse<'a> {
-        let response = self.do_handle_request(*client, &request).await;
+        let result = self.do_handle_request(*client, &request).await;
 
         self.access_logger.log(
             LogLevel::Info,
@@ -264,17 +250,26 @@ impl App for StaticHuntsman {
                     None
                 },
                 if self.log_responses {
-                    Some((
-                        response.0.status().code(),
-                        response.1.as_deref().map(|path| path),
-                    ))
+                    Some(match &result {
+                        Ok((response, response_path)) => (
+                            response.status().code(),
+                            response_path.as_deref().map(|path| path),
+                        ),
+                        Err(error) => (error.response().status().code(), None),
+                    })
                 } else {
                     None
                 },
             ),
         );
 
-        response.0
+        match result {
+            Ok((response, _)) => response,
+            Err(error) => {
+                self.error_logger.log(LogLevel::Error, &error);
+                error.unwrap_response()
+            }
+        }
     }
 
     async fn on_client_connect(

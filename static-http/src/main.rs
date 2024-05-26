@@ -6,6 +6,7 @@ use std::{borrow::Cow, path::PathBuf};
 
 mod app;
 mod args;
+mod error;
 mod log;
 mod path;
 

@@ -1,10 +1,10 @@
 # To Do
- 1. Fix reversed error and access logs in "static-http"
- 2. Add catching panics while handling clients
- 3. Add support for chunked response bodies
+ 1. Add catching panics while handling clients
+ 2. Add support for chunked response bodies
      Use trait object with `async fn next(&mut self) -> Option<&[u8]>`
- 4. Add cache option to "static-http"
- 5. Add keep-alive and close support
+ 3. Add cache option to "static-http"
+ 4. Add keep-alive and close support
+ 5. Add all standard MIME types to "static-http"
  6. Add compression to "static-http"
  7. Add support for content encodings on requests (Handle transparently)
  8. Add support for transfer encodings on requests
@@ -19,4 +19,3 @@
    1. HTTPS
    2. HTTP2
    3. HTTP3
- 13. Add all standard MIME types to "static-http"
