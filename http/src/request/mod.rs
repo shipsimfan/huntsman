@@ -15,7 +15,7 @@ pub struct HTTPRequest<'a> {
     header: HTTPRequestHeader<'a>,
 
     /// The body of the request
-    body: Box<[u8]>,
+    body: Option<Box<[u8]>>,
 }
 
 /// Parse the `content_length` into a [`usize`]
@@ -52,8 +52,7 @@ impl<'a> HTTPRequest<'a> {
             }
         };
 
-        let mut body = Vec::new().into_boxed_slice();
-        if let Some(content_length) = header.field(b"Content-Length") {
+        let body = if let Some(content_length) = header.field(b"Content-Length") {
             let content_length = parse_content_length(content_length.value())?;
 
             if content_length > max_body_size {
@@ -72,15 +71,17 @@ impl<'a> HTTPRequest<'a> {
                 .unwrap_or(Err(HTTPParseError::BodyReadTimeout))?;
             }
 
-            body = buffer;
-        }
+            Some(buffer)
+        } else {
+            None
+        };
 
         Ok(Some(HTTPRequest { header, body }))
     }
 
     /// Gets the body of this request
-    pub fn body(&self) -> &[u8] {
-        &self.body
+    pub fn body(&self) -> Option<&[u8]> {
+        self.body.as_ref().map(|slice| slice.as_ref())
     }
 }
 

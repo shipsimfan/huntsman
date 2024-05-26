@@ -259,7 +259,7 @@ impl App for StaticHuntsman {
                     None
                 },
                 if self.log_bodies {
-                    Some(request.body())
+                    request.body()
                 } else {
                     None
                 },

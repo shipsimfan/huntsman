@@ -16,9 +16,9 @@ lasync.git = "https://github.com/shipsimfan/lib-lasync"
 
 [package]
 name = "huntsman"
-version.workspace = true
 description = "A library for running servers"
 
+version.workspace = true
 authors.workspace = true
 edition.workspace = true
 repository.workspace = true
