@@ -1,5 +1,4 @@
 use app::StaticHuntsman;
-use log::LoggerOutput;
 use oak::LogController;
 use path::parse_extension;
 use std::{borrow::Cow, path::PathBuf};
@@ -7,7 +6,6 @@ use std::{borrow::Cow, path::PathBuf};
 mod app;
 mod args;
 mod error;
-mod log;
 mod path;
 mod response_display;
 

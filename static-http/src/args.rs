@@ -1,7 +1,6 @@
-use crate::LoggerOutput;
 use argparse::{config_flag, help_flag, parser, parsing_flag, simple_flag, version_flag};
 use huntsman_http::{HTTPOptions, HTTP};
-use oak::{FilterListType, LogLevel};
+use oak::{FilterListType, LogLevel, StdLogOutput};
 use std::{net::SocketAddr, num::NonZeroUsize, path::PathBuf, time::Duration};
 
 /// Options that control how the server will run
@@ -50,7 +49,7 @@ pub struct StaticHuntsmanOptions {
     pub log_filter: Vec<String>,
 
     /// The outputs for logging
-    pub log_outputs: Vec<LoggerOutput>,
+    pub log_outputs: Vec<StdLogOutput>,
 }
 
 parser! {
@@ -191,7 +190,7 @@ parser! {
         parsing_flag!(, "log-output" "OUTPUT" "missing OUTPUT for log-output"
                       ["Add OUTPUT as a log output",
                        "Can be set to \"stdout\", \"stderr\", or a path"]
-                      |options: StaticHuntsmanOptions, output: LoggerOutput| { options.log_outputs.push(output); }
+                      |options: StaticHuntsmanOptions, output: StdLogOutput| { options.log_outputs.push(output); }
         ).group("LOGGING FLAGS").repeatable(true),
 
         // Other Flags
