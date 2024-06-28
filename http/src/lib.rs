@@ -23,7 +23,8 @@ pub use lasync::{Error, Result};
 pub use listen_address::ListenAddress;
 pub use options::HTTPOptions;
 pub use request::{
-    HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestField, HTTPRequestHeader, HTTPTarget,
+    HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestDisplay, HTTPRequestField,
+    HTTPRequestHeader, HTTPTarget,
 };
 pub use response::{HTTPResponse, HTTPStatus};
 

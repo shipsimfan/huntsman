@@ -1,5 +1,5 @@
 use app::StaticHuntsman;
-use log::{ListenerDisplay, LoggerOutput, RequestDisplay};
+use log::LoggerOutput;
 use oak::LogController;
 use path::parse_extension;
 use std::{borrow::Cow, path::PathBuf};
@@ -9,6 +9,7 @@ mod args;
 mod error;
 mod log;
 mod path;
+mod response_display;
 
 /// Attempts to read a file and parse it's extension
 fn read_file(path: Option<PathBuf>, default: &'static [u8]) -> (Cow<'static, [u8]>, &'static [u8]) {

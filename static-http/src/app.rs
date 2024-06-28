@@ -1,7 +1,8 @@
-use crate::{error::HandleError, path::parse_extension, ListenerDisplay, RequestDisplay};
+use crate::{error::HandleError, path::parse_extension, response_display::ResponseDisplay};
 use huntsman::{App, Protocol};
 use huntsman_http::{
-    HTTPClientAddress, HTTPParseError, HTTPResponse, HTTPStatus, HTTPTarget, ListenAddress, HTTP,
+    HTTPClientAddress, HTTPParseError, HTTPRequestDisplay, HTTPResponse, HTTPStatus, HTTPTarget,
+    ListenAddress, HTTP,
 };
 use lasync::{
     fs::{File, Metadata},
@@ -222,8 +223,7 @@ impl App for StaticHuntsman {
     type Client = HTTPClientAddress;
 
     async fn on_server_start(self: &Arc<Self>, address: ListenAddress) {
-        self.connections_logger
-            .log(LogLevel::Info, &ListenerDisplay(&address));
+        self.connections_logger.log(LogLevel::Info, &address);
     }
 
     async fn handle_request<'a, 'b>(
@@ -233,33 +233,26 @@ impl App for StaticHuntsman {
     ) -> HTTPResponse<'a> {
         let result = self.do_handle_request(*client, &request).await;
 
+        let response_display = if self.log_responses {
+            Some(match &result {
+                Ok((response, response_path)) => ResponseDisplay::new(
+                    response.status().code(),
+                    response_path.as_deref().map(|path| path),
+                ),
+                Err(error) => ResponseDisplay::new(error.response().status().code(), None),
+            })
+        } else {
+            None
+        };
+
         self.access_logger.log(
             LogLevel::Info,
-            &RequestDisplay::new(
-                request.method(),
+            &HTTPRequestDisplay::new(
+                &request,
                 *client,
-                request.target(),
-                if self.log_headers {
-                    Some(request.fields())
-                } else {
-                    None
-                },
-                if self.log_bodies {
-                    request.body()
-                } else {
-                    None
-                },
-                if self.log_responses {
-                    Some(match &result {
-                        Ok((response, response_path)) => (
-                            response.status().code(),
-                            response_path.as_deref().map(|path| path),
-                        ),
-                        Err(error) => (error.response().status().code(), None),
-                    })
-                } else {
-                    None
-                },
+                response_display,
+                self.log_headers,
+                self.log_bodies,
             ),
         );
 

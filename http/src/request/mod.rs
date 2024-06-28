@@ -2,9 +2,11 @@ use crate::Stream;
 use lasync::{io::Read, time::Timeout};
 use std::{ops::Deref, time::Duration};
 
+mod display;
 mod error;
 mod header;
 
+pub use display::HTTPRequestDisplay;
 pub use error::HTTPParseError;
 pub use header::{HTTPMethod, HTTPRequestField, HTTPRequestHeader, HTTPTarget};
 

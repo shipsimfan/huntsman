@@ -29,3 +29,15 @@ impl Default for ListenAddress {
         }
     }
 }
+
+impl<'a> std::fmt::Display for ListenAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Server listening on:")?;
+
+        if let Some(http) = &self.http {
+            write!(f, "\n - {} (HTTP/1.1)", http)?;
+        }
+
+        Ok(())
+    }
+}
