@@ -46,6 +46,11 @@ impl<'a> HTTPTarget<'a> {
 
         Ok(HTTPTarget(&uri[..uri.len() - 1]))
     }
+
+    /// Gets the target as a slice of bytes
+    pub fn as_slice(&self) -> &'a [u8] {
+        self.0
+    }
 }
 
 impl<'a> Deref for HTTPTarget<'a> {
