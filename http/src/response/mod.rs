@@ -90,17 +90,20 @@ impl<'a> HTTPResponse<'a> {
         socket: &mut TCPStream,
         write_timeout: Duration,
     ) -> Result<()> {
-        if let Some(body) = self.body.as_ref() {
-            self.header.extend_from_slice(b"Content-Length: ");
-            self.header
-                .extend_from_slice(format!("{}", body.len()).as_bytes());
-
-            self.header.extend_from_slice(b"\r\nContent-Type: ");
+        let body_length = if let Some(body) = self.body.as_ref() {
+            self.header.extend_from_slice(b"Content-Type: ");
             self.header.extend_from_slice(body.content_type());
             self.header.extend_from_slice(b"\r\n");
-        }
 
-        self.header.extend_from_slice(b"\r\n");
+            body.len()
+        } else {
+            0
+        };
+
+        self.header.extend_from_slice(b"Content-Length: ");
+        self.header
+            .extend_from_slice(body_length.to_string().as_bytes());
+        self.header.extend_from_slice(b"\r\n\r\n");
 
         Timeout::new(
             async move {
