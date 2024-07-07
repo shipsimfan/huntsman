@@ -97,9 +97,10 @@ impl<'a> HTTPResponse<'a> {
 
             self.header.extend_from_slice(b"\r\nContent-Type: ");
             self.header.extend_from_slice(body.content_type());
+            self.header.extend_from_slice(b"\r\n");
         }
 
-        self.header.extend_from_slice(b"\r\n\r\n");
+        self.header.extend_from_slice(b"\r\n");
 
         Timeout::new(
             async move {
