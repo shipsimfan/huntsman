@@ -6,7 +6,7 @@ use super::HTTPResponse;
 
 /// The body of an [`HTTPResponse`]
 #[derive(Debug)]
-pub(super) struct HTTPResponseBody<'a> {
+pub(crate) struct HTTPResponseBody<'a> {
     /// The body itself
     body: Cow<'a, [u8]>,
 
@@ -25,7 +25,7 @@ impl<'a> HTTPResponseBody<'a> {
     }
 
     /// Gets the contained body
-    pub(super) fn body(&self) -> &[u8] {
+    pub(crate) fn body(&self) -> &[u8] {
         &self.body
     }
 

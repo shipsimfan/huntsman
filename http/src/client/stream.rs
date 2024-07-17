@@ -1,6 +1,5 @@
-use super::HeaderBuffer;
+use super::{HTTPSocket, HeaderBuffer};
 use crate::HTTPParseError;
-use lasync::net::TCPStream;
 
 /// A stream of bytes from a [`TcpStream`]
 pub(crate) struct Stream<'a, 'b> {
@@ -8,12 +7,12 @@ pub(crate) struct Stream<'a, 'b> {
     buffer: &'a mut HeaderBuffer,
 
     /// The stream to read from
-    socket: &'b mut TCPStream,
+    socket: &'b mut HTTPSocket,
 }
 
 impl<'a, 'b> Stream<'a, 'b> {
     /// Creates a new [`Stream`]
-    pub(super) fn new(buffer: &'a mut HeaderBuffer, socket: &'b mut TCPStream) -> Self {
+    pub(super) fn new(buffer: &'a mut HeaderBuffer, socket: &'b mut HTTPSocket) -> Self {
         buffer.reset();
 
         Stream { buffer, socket }
@@ -151,7 +150,7 @@ impl<'a, 'b> Stream<'a, 'b> {
 
     /// Creates a buffer for the body, copies any data currently in the header buffer for the body,
     /// and returns the body buffer and the number of bytes copied.
-    pub(crate) fn body(self, content_length: usize) -> (&'b mut TCPStream, Box<[u8]>, usize) {
+    pub(crate) fn body(self, content_length: usize) -> (&'b mut HTTPSocket, Box<[u8]>, usize) {
         let mut buffer = vec![0; content_length].into_boxed_slice();
 
         let length = self.buffer.copy_body(&mut buffer);

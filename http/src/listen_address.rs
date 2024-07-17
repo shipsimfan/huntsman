@@ -1,43 +1,34 @@
-use std::net::{Ipv6Addr, SocketAddr, SocketAddrV6};
-
-#[cfg(debug_assertions)]
-/// The default port for insecure HTTP/1.1 connections
-const DEFAULT_HTTP_PORT: u16 = 8080;
-
-#[cfg(not(debug_assertions))]
-/// The default port for insecure HTTP/1.1 connections
-const DEFAULT_HTTP_PORT: u16 = 80;
+use std::net::{SocketAddr, ToSocketAddrs};
 
 /// The addresses this server will listen on
 #[derive(Clone)]
-pub struct ListenAddress {
-    /// The address to listen for insecure HTTP/1.1 connections on over IPv4
-    pub http: Option<SocketAddr>,
+pub enum HTTPListenAddress {
+    /// The address to listen for insecure HTTP/1.1 connections
+    HTTP(SocketAddr),
 }
 
-impl ListenAddress {
-    /// Creates a [`ListenAddress`] with all addresses set to [`None`]
-    pub const fn empty() -> Self {
-        ListenAddress { http: None }
+impl HTTPListenAddress {
+    /// Creates a new [`ListenAddress`] for insecure HTTP/1.1 connections
+    pub fn http<S: ToSocketAddrs>(addr: S) -> std::io::Result<Self> {
+        Ok(HTTPListenAddress::HTTP(
+            addr.to_socket_addrs()?.next().ok_or(std::io::Error::new(
+                std::io::ErrorKind::AddrNotAvailable,
+                "could not get address",
+            ))?,
+        ))
     }
 }
 
-impl Default for ListenAddress {
-    fn default() -> Self {
-        ListenAddress {
-            http: Some(SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, DEFAULT_HTTP_PORT, 0, 0).into()),
-        }
-    }
-}
-
-impl<'a> std::fmt::Display for ListenAddress {
+impl<'a> std::fmt::Display for HTTPListenAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Server listening on:")?;
-
-        if let Some(http) = &self.http {
-            write!(f, "\n - {} (HTTP/1.1)", http)?;
+        match self {
+            HTTPListenAddress::HTTP(address) => write!(f, "{} (HTTP/1.1)", address),
         }
+    }
+}
 
-        Ok(())
+impl<'a> std::fmt::Debug for HTTPListenAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, f)
     }
 }

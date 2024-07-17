@@ -1,8 +1,6 @@
-use crate::Result;
 use body::HTTPResponseBody;
-use lasync::{io::Write, net::TCPStream, time::Timeout, Error};
 use name::SERVER;
-use std::{borrow::Cow, time::Duration};
+use std::borrow::Cow;
 
 mod body;
 mod name;
@@ -84,12 +82,8 @@ impl<'a> HTTPResponse<'a> {
         self.body = Some(HTTPResponseBody::new(body, content_type));
     }
 
-    /// Writes this response to `socket`
-    pub(super) async fn send(
-        mut self,
-        socket: &mut TCPStream,
-        write_timeout: Duration,
-    ) -> Result<()> {
+    /// Generates the response header to write and returns the tuple `(header, body)`
+    pub(super) fn generate_header(mut self) -> (Vec<u8>, Option<HTTPResponseBody<'a>>) {
         let body_length = if let Some(body) = self.body.as_ref() {
             self.header.extend_from_slice(b"Content-Type: ");
             self.header.extend_from_slice(body.content_type());
@@ -104,21 +98,7 @@ impl<'a> HTTPResponse<'a> {
         self.header
             .extend_from_slice(body_length.to_string().as_bytes());
         self.header.extend_from_slice(b"\r\n\r\n");
-
-        Timeout::new(
-            async move {
-                socket.write_all(&self.header).await?;
-
-                if let Some(body) = self.body.as_ref() {
-                    socket.write_all(body.body()).await
-                } else {
-                    Ok(())
-                }
-            },
-            write_timeout,
-        )?
-        .await
-        .unwrap_or(Err(Error::ETIMEDOUT))
+        (self.header, self.body)
     }
 }
 

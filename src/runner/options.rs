@@ -9,7 +9,7 @@ pub struct Options<Protocol: crate::Protocol> {
     connections_per_worker: NonZeroUsize,
 
     /// The address to listen for connections on
-    address: Protocol::ListenAddress,
+    addresses: Vec<Protocol::ListenAddress>,
 }
 
 impl<Protocol: crate::Protocol> Options<Protocol> {
@@ -26,8 +26,8 @@ impl<Protocol: crate::Protocol> Options<Protocol> {
     }
 
     /// Gets the address to listen for connections on
-    pub fn address(&self) -> &Protocol::ListenAddress {
-        &self.address
+    pub fn addresses(&self) -> &[Protocol::ListenAddress] {
+        &self.addresses
     }
 
     /// Sets the number of workers to handle connections
@@ -41,13 +41,13 @@ impl<Protocol: crate::Protocol> Options<Protocol> {
     }
 
     /// Sets the address to listen for connections on
-    pub fn set_address(&mut self, address: Protocol::ListenAddress) {
-        self.address = address;
+    pub fn add_address(&mut self, address: Protocol::ListenAddress) {
+        self.addresses.push(address);
     }
 
     /// Gets the address to listen for connections on mutably
-    pub fn address_mut(&mut self) -> &mut Protocol::ListenAddress {
-        &mut self.address
+    pub fn addresses_mut(&mut self) -> &mut Vec<Protocol::ListenAddress> {
+        &mut self.addresses
     }
 }
 
@@ -56,7 +56,7 @@ impl<Protocol: crate::Protocol> Default for Options<Protocol> {
         Options {
             workers: None,
             connections_per_worker: NonZeroUsize::new(64).unwrap(),
-            address: Protocol::ListenAddress::default(),
+            addresses: Vec::new(),
         }
     }
 }

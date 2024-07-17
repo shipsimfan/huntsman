@@ -1,5 +1,6 @@
+use super::HTTPSocket;
 use crate::HTTPParseError;
-use lasync::{io::Read, net::TCPStream, time::Timeout};
+use lasync::time::Timeout;
 use std::time::Duration;
 
 /// A buffer for more efficient reading from a socket
@@ -48,7 +49,7 @@ impl HeaderBuffer {
     }
 
     /// Reads the next value from `stream` without consuming it
-    pub(super) async fn peek(&mut self, stream: &mut TCPStream) -> Result<u8, HTTPParseError> {
+    pub(super) async fn peek(&mut self, stream: &mut HTTPSocket) -> Result<u8, HTTPParseError> {
         if self.index == self.buffer.len() {
             return Err(HTTPParseError::HeadersTooLong);
         }
@@ -61,7 +62,7 @@ impl HeaderBuffer {
     }
 
     /// Gets the next byte from the buffer or reads more bytes from `stream`
-    pub(super) async fn next(&mut self, stream: &mut TCPStream) -> Result<u8, HTTPParseError> {
+    pub(super) async fn next(&mut self, stream: &mut HTTPSocket) -> Result<u8, HTTPParseError> {
         let ret = self.peek(stream).await?;
         self.index += 1;
         Ok(ret)
@@ -94,7 +95,7 @@ impl HeaderBuffer {
     }
 
     /// Extend the buffer by reading from `stream`
-    async fn read(&mut self, stream: &mut TCPStream) -> Result<(), HTTPParseError> {
+    async fn read(&mut self, stream: &mut HTTPSocket) -> Result<(), HTTPParseError> {
         assert_ne!(self.length, self.buffer.len());
 
         let count = Timeout::new(

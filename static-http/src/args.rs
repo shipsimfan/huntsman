@@ -1,5 +1,5 @@
 use argparse::{config_flag, help_flag, parser, parsing_flag, simple_flag, version_flag};
-use huntsman_http::{HTTPOptions, HTTP};
+use huntsman_http::{HTTPListenAddress, HTTPOptions, HTTP};
 use oak::{FilterListType, LogLevel, StdLogOutput};
 use std::{net::SocketAddr, num::NonZeroUsize, path::PathBuf, time::Duration};
 
@@ -88,8 +88,8 @@ parser! {
                       |options: StaticHuntsmanOptions, count: NonZeroUsize| { options.huntsman_options.set_connections_per_worker(count); }
         ).group("HUNTSMAN FLAGS"),
         parsing_flag!(, "http" "ADDRESS:PORT" "missing ADDRESS for http"
-                      "Specify the address to listen for insecure HTTP/1.1 connections on"
-                      |options: StaticHuntsmanOptions, address: SocketAddr| { options.huntsman_options.address_mut().http = Some(address); }
+                      "Specify an address to listen for insecure HTTP/1.1 connections on"
+                      |options: StaticHuntsmanOptions, address: SocketAddr| { options.huntsman_options.add_address(HTTPListenAddress::HTTP(address)); }
         ).group("HUNTSMAN FLAGS"),
 
         // HTTP Flags

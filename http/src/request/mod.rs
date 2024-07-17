@@ -1,5 +1,5 @@
 use crate::Stream;
-use lasync::{io::Read, time::Timeout};
+use lasync::time::Timeout;
 use std::{ops::Deref, time::Duration};
 
 mod display;

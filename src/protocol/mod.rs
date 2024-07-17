@@ -1,8 +1,10 @@
-mod client;
-
 use std::future::Future;
 
+mod client;
+mod listener;
+
 pub use client::ProtocolClient;
+pub use listener::ProtocolListener;
 
 /// A protocol which huntsman can run a server for
 pub trait Protocol: 'static + Sized + Send + Sync {
@@ -12,17 +14,11 @@ pub trait Protocol: 'static + Sized + Send + Sync {
     /// The address of a connecting client
     type ClientAddress: Send;
 
-    /// The address of a listening socket
-    type ListenAddress: Send + Default;
-
     /// Parser for requests from a client
     type Request<'a>;
 
     /// Responses sent to the client
     type Response<'a>;
-
-    /// The error when starting the server and accepting clients
-    type ListenError: std::error::Error;
 
     /// The error when reading and parsing requests
     type ReadError: std::error::Error;
@@ -38,17 +34,33 @@ pub trait Protocol: 'static + Sized + Send + Sync {
         SendError = Self::SendError,
     >;
 
+    /// The address of a listening socket
+    type ListenAddress: Send;
+
+    /// The error when starting the server and accepting clients
+    type ListenError: std::error::Error;
+
+    /// A socket which listens for connections
+    type Listener: ProtocolListener<
+        Address = Self::ListenAddress,
+        Error = Self::ListenError,
+        Client = Self::Client,
+        ClientAddress = Self::ClientAddress,
+        Options = Self::Options,
+    >;
+
     /// Create a new socket listening on `address` with `options`
     fn start(
-        address: &Self::ListenAddress,
+        addresses: &[Self::ListenAddress],
         options: Self::Options,
     ) -> impl Future<Output = Result<Self, Self::ListenError>>;
 
     /// Get the addresses this listen socket is bound too
-    fn address(&mut self) -> impl Future<Output = Self::ListenAddress>;
+    fn addresses(&self) -> &[Self::ListenAddress];
 
-    /// Accept a new client on this socket
-    fn accept(
-        &self,
-    ) -> impl Future<Output = Result<(Self::Client, Self::ClientAddress), Self::ListenError>>;
+    /// Gets the listening sockets
+    fn listeners(&self) -> &[Self::Listener];
+
+    /// Gets the options used to create this server
+    fn options(&self) -> &Self::Options;
 }

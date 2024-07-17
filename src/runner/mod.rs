@@ -35,10 +35,9 @@ pub async fn async_run<'a, Protocol: crate::Protocol, App: crate::App<Protocol =
     future_queue: FutureQueue<'a>,
 ) -> Result<(), StartError<Protocol>> {
     // Create the listener
-    let mut listener = Protocol::start(huntsman_options.address(), protocol_options)
+    let listener = Protocol::start(huntsman_options.addresses(), protocol_options)
         .await
         .map_err(StartError::Protocol)?;
-    let address = listener.address().await;
 
     // Prepare shared values
     let app = Arc::new(app);
@@ -46,7 +45,7 @@ pub async fn async_run<'a, Protocol: crate::Protocol, App: crate::App<Protocol =
     let connections_per_worker = huntsman_options.connections_per_worker();
 
     // Signal the server start
-    app.on_server_start(address).await;
+    app.on_server_start(listener.addresses()).await;
 
     // Create workers
     for i in 0..huntsman_options.workers().get() - 1 {
@@ -58,5 +57,6 @@ pub async fn async_run<'a, Protocol: crate::Protocol, App: crate::App<Protocol =
             .spawn(move || worker::run(child_app, child_listener, connections_per_worker))?;
     }
 
-    worker::accept_clients(app, listener, connections_per_worker, future_queue).await
+    worker::accept_clients(app, listener, connections_per_worker, &future_queue);
+    Ok(())
 }

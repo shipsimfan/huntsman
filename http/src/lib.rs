@@ -8,19 +8,18 @@
 
 use client::Stream;
 use huntsman::Protocol;
-use listeners::Listeners;
-use std::time::Duration;
+use listener::HTTPListener;
 
 mod client;
 mod listen_address;
-mod listeners;
+mod listener;
 mod options;
 mod request;
 mod response;
 
 pub use client::{HTTPClient, HTTPClientAddress, HTTPProtocol};
 pub use lasync::{Error, Result};
-pub use listen_address::ListenAddress;
+pub use listen_address::HTTPListenAddress;
 pub use options::HTTPOptions;
 pub use request::{
     HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestDisplay, HTTPRequestField,
@@ -30,77 +29,54 @@ pub use response::{HTTPResponse, HTTPStatus};
 
 /// The HTTP protocol
 pub struct HTTP {
-    /// The socket for accepting clients
-    listeners: Listeners,
+    /// The sockets for accepting clients
+    listeners: Vec<HTTPListener>,
 
     /// The addresses the server is listening on
-    listen_address: ListenAddress,
+    listen_addresses: Vec<HTTPListenAddress>,
 
-    /// The maximum size for headers in requests and responses
-    max_header_size: usize,
-
-    /// The maximum size for bodies in requests
-    max_body_size: usize,
-
-    /// The maximum amount of time allowed between header reads
-    header_read_timeout: Duration,
-
-    /// The maximum amount of time allowed between body reads
-    body_read_timeout: Duration,
-
-    /// The maximum amount of time allowed between writes
-    write_timeout: Duration,
+    options: HTTPOptions,
 }
 
 impl Protocol for HTTP {
     type Options = HTTPOptions;
 
     type ClientAddress = HTTPClientAddress;
-
-    type ListenAddress = ListenAddress;
-
     type Request<'a> = HTTPRequest<'a>;
-
     type Response<'a> = HTTPResponse<'a>;
-
-    type ListenError = lasync::Error;
-
     type ReadError = HTTPParseError;
-
     type SendError = lasync::Error;
-
     type Client = HTTPClient;
 
-    async fn start(address: &Self::ListenAddress, options: Self::Options) -> Result<Self> {
-        let (listeners, listen_address) = Listeners::new(address.clone())?;
+    type ListenAddress = HTTPListenAddress;
+    type ListenError = lasync::Error;
+    type Listener = HTTPListener;
+
+    async fn start(addresses: &[Self::ListenAddress], options: Self::Options) -> Result<Self> {
+        let mut listeners = Vec::with_capacity(addresses.len());
+        let mut listen_addresses = Vec::with_capacity(addresses.len());
+        for address in addresses {
+            let (listener, listen_address) = HTTPListener::new(address)?;
+            listeners.push(listener);
+            listen_addresses.push(listen_address);
+        }
 
         Ok(HTTP {
             listeners,
-            listen_address,
-            max_header_size: options.max_header_size,
-            max_body_size: options.max_body_size,
-            header_read_timeout: options.header_read_timeout,
-            body_read_timeout: options.body_read_timeout,
-            write_timeout: options.write_timeout,
+            listen_addresses,
+            options,
         })
     }
 
-    async fn address(&mut self) -> Self::ListenAddress {
-        self.listen_address.clone()
+    fn addresses(&self) -> &[Self::ListenAddress] {
+        &self.listen_addresses
     }
 
-    async fn accept(&self) -> Result<(Self::Client, Self::ClientAddress)> {
-        let (socket, address) = self.listeners.accept().await?;
+    fn listeners(&self) -> &[Self::Listener] {
+        &self.listeners
+    }
 
-        let client = HTTPClient::new(
-            socket,
-            self.max_header_size,
-            self.max_body_size,
-            self.header_read_timeout,
-            self.body_read_timeout,
-            self.write_timeout,
-        )?;
-
-        Ok((client, address))
+    fn options(&self) -> &Self::Options {
+        &self.options
     }
 }

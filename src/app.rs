@@ -20,7 +20,7 @@ pub trait App: 'static + Send + Sync {
     #[allow(unused_variables)]
     fn on_server_start(
         self: &Arc<Self>,
-        address: <Self::Protocol as Protocol>::ListenAddress,
+        addresses: &[<Self::Protocol as Protocol>::ListenAddress],
     ) -> impl Future<Output = ()> {
         async {}
     }

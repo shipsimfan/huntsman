@@ -1,14 +1,14 @@
 use crate::{error::HandleError, path::parse_extension, response_display::ResponseDisplay};
 use huntsman::{App, Protocol};
 use huntsman_http::{
-    HTTPClientAddress, HTTPParseError, HTTPRequestDisplay, HTTPResponse, HTTPStatus, HTTPTarget,
-    ListenAddress, HTTP,
+    HTTPClientAddress, HTTPListenAddress, HTTPParseError, HTTPRequestDisplay, HTTPResponse,
+    HTTPStatus, HTTPTarget, HTTP,
 };
 use lasync::{
     fs::{File, Metadata},
     io::Read,
 };
-use oak::{LogController, LogLevel, Logger};
+use oak::{info, LogController, LogLevel, Logger};
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
@@ -222,8 +222,11 @@ impl App for StaticHuntsman {
 
     type Client = HTTPClientAddress;
 
-    async fn on_server_start(self: &Arc<Self>, address: ListenAddress) {
-        self.connections_logger.log(LogLevel::Info, &address);
+    async fn on_server_start(self: &Arc<Self>, addresses: &[HTTPListenAddress]) {
+        info!(
+            self.connections_logger,
+            "Sever listening on: {:?}", addresses
+        );
     }
 
     async fn handle_request<'a, 'b>(

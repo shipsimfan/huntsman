@@ -15,10 +15,7 @@ pub(super) fn run<Protocol: crate::Protocol, App: crate::App<Protocol = Protocol
     max_connections: NonZeroUsize,
 ) -> ! {
     let future_queue = FutureQueue::new();
-    let child_future_queue = future_queue.clone();
-    future_queue.push(async move {
-        accept_clients(app, listener, max_connections, child_future_queue).await;
-    });
+    accept_clients(app, listener, max_connections, &future_queue);
 
     lasync::run_queue(super::NUM_EVENTS, future_queue).unwrap();
     panic!("Executor returned in huntsman thread!");

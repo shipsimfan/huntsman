@@ -1,21 +1,23 @@
 use crate::{HTTPParseError, HTTPRequest, HTTPResponse};
 use buffer::HeaderBuffer;
 use huntsman::ProtocolClient;
-use lasync::net::TCPStream;
+use lasync::{time::Timeout, Error};
 use std::{future::Future, time::Duration};
 
 mod address;
 mod buffer;
+mod socket;
 mod stream;
 
 pub use address::{HTTPClientAddress, HTTPProtocol};
 
+pub(crate) use socket::HTTPSocket;
 pub(crate) use stream::Stream;
 
 /// A client connected to the server
 pub struct HTTPClient {
     /// The socket representing the underlying connection
-    socket: TCPStream,
+    socket: HTTPSocket,
 
     /// The buffer for more efficient header reading and parsing
     buffer: HeaderBuffer,
@@ -33,7 +35,7 @@ pub struct HTTPClient {
 impl HTTPClient {
     /// Creates a new [`HTTPClient`]
     pub(crate) fn new(
-        mut socket: TCPStream,
+        socket: HTTPSocket,
         max_header_size: usize,
         max_body_size: usize,
         header_read_timeout: Duration,
@@ -41,8 +43,6 @@ impl HTTPClient {
         write_timeout: Duration,
     ) -> crate::Result<Self> {
         let buffer = HeaderBuffer::new(max_header_size, header_read_timeout);
-
-        socket.set_nodelay(true)?;
 
         Ok(HTTPClient {
             socket,
@@ -57,7 +57,7 @@ impl HTTPClient {
 impl ProtocolClient for HTTPClient {
     type ReadError = HTTPParseError;
 
-    type SendError = lasync::Error;
+    type SendError = Error;
 
     type Request<'a> = HTTPRequest<'a>;
 
@@ -71,10 +71,23 @@ impl ProtocolClient for HTTPClient {
         HTTPRequest::parse(stream, self.max_body_size, self.body_read_timeout)
     }
 
-    fn send<'a>(
-        &mut self,
-        response: Self::Response<'a>,
-    ) -> impl Future<Output = Result<(), Self::SendError>> {
-        response.send(&mut self.socket, self.write_timeout)
+    async fn send<'a>(&mut self, response: Self::Response<'a>) -> Result<(), Self::SendError> {
+        let (header, body) = response.generate_header();
+
+        let write_timeout = self.write_timeout;
+        Timeout::new(
+            async move {
+                self.socket.write(&header).await?;
+
+                if let Some(body) = body {
+                    self.socket.write(body.body()).await
+                } else {
+                    Ok(())
+                }
+            },
+            write_timeout,
+        )?
+        .await
+        .unwrap_or(Err(Error::ETIMEDOUT))
     }
 }
