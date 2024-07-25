@@ -14,6 +14,7 @@ mod client;
 mod listen_address;
 mod listener;
 mod options;
+mod path;
 mod request;
 mod response;
 
@@ -21,6 +22,7 @@ pub use client::{HTTPClient, HTTPClientAddress, HTTPProtocol};
 pub use lasync::{Error, Result};
 pub use listen_address::HTTPListenAddress;
 pub use options::HTTPOptions;
+pub use path::{HTTPPath, HTTPQueryParam};
 pub use request::{
     HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestDisplay, HTTPRequestField,
     HTTPRequestHeader, HTTPTarget,
