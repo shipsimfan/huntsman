@@ -1,5 +1,5 @@
 use crate::HTTPTarget;
-use std::{borrow::Cow, fmt::Debug};
+use std::{borrow::Cow, fmt::Debug, ops::Index};
 
 mod query_param;
 
@@ -110,8 +110,8 @@ impl<'a> HTTPPath<'a> {
     }
 
     /// Gets the segment at index `i`
-    pub fn segment(&self, i: usize) -> &[u8] {
-        &self.segments[i]
+    pub fn segment(&self, i: usize) -> Option<&[u8]> {
+        self.segments.get(i).map(|segment| segment.as_ref())
     }
 
     /// Gets an iterator over the segments of this path
@@ -133,6 +133,14 @@ impl<'a> HTTPPath<'a> {
         }
 
         None
+    }
+}
+
+impl<'a> Index<usize> for HTTPPath<'a> {
+    type Output = [u8];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.segments[index].as_ref()
     }
 }
 
