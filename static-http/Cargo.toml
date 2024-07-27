@@ -15,5 +15,5 @@ lasync.workspace = true
 huntsman.path = ".."
 huntsman-http.path = "../http"
 
-argparse = { git = "https://github.com/shipsimfan/lib-argparse", branch = "feature/config-file" }
+argparse.git = "https://github.com/shipsimfan/lib-argparse"
 oak.git = "https://github.com/shipsimfan/oak"

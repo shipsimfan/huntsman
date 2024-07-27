@@ -25,9 +25,6 @@ pub struct StaticHuntsman {
     /// The values to try when a request for a folder occurs
     indexes: Vec<PathBuf>,
 
-    /// The length of the longest index
-    longest_index: usize,
-
     /// The body to respond with when a bad request is submitted
     bad_request: (Cow<'static, [u8]>, &'static [u8]),
 
@@ -137,14 +134,6 @@ impl StaticHuntsman {
         log_bodies: bool,
         log_responses: bool,
     ) -> Self {
-        let mut longest_index = 0;
-        for index in &indexes {
-            let length = index.as_os_str().len();
-            if longest_index < length {
-                longest_index = length;
-            }
-        }
-
         let connections_logger = log_controller.create_logger("connections");
         let access_logger = log_controller.create_logger("access");
         let error_logger = log_controller.create_logger("error");
@@ -152,7 +141,6 @@ impl StaticHuntsman {
         StaticHuntsman {
             base,
             indexes,
-            longest_index,
             bad_request: (bad_request.0.into(), bad_request.1),
             not_found: (not_found.0.into(), not_found.1),
             connections_logger,
@@ -166,7 +154,7 @@ impl StaticHuntsman {
 
     /// Attempts to parse the target into a path or returns a "400 Bad Request" response
     fn parse_path<'a>(&'a self, target: HTTPTarget) -> Result<OsString, HTTPResponse<'a>> {
-        crate::path::parse(target, &self.base, self.longest_index + 1).ok_or_else(|| {
+        crate::path::parse(target, &self.base).ok_or_else(|| {
             (
                 HTTPStatus::BadRequest,
                 self.bad_request.0.as_ref(),

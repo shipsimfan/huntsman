@@ -1,6 +1,6 @@
 use super::parse_segment_until;
 use crate::HTTPTarget;
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::Debug};
 
 /// A query parameter passed in an HTTP request
 pub struct HTTPQueryParam<'a> {
@@ -13,7 +13,7 @@ impl<'a> HTTPQueryParam<'a> {
     pub(super) fn parse(i: usize, target: &'a HTTPTarget<'a>) -> (Self, usize) {
         let (key, i) = parse_segment_until(i, target, |x| x == b'=' || x == b'&');
         let (value, i) = if target[i] == b'=' {
-            parse_segment_until(i, target, |x| x == b'&')
+            parse_segment_until(i + 1, target, |x| x == b'&')
         } else {
             (Cow::Borrowed(&[] as &[u8]), i)
         };
@@ -29,5 +29,15 @@ impl<'a> HTTPQueryParam<'a> {
     /// Gets the value of this query parameter
     pub fn value(&self) -> &[u8] {
         &self.value
+    }
+}
+
+impl<'a> Debug for HTTPQueryParam<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("HTTPQueryParam ")?;
+        f.debug_map()
+            .entry(&"key", &String::from_utf8_lossy(&self.key))
+            .entry(&"value", &String::from_utf8_lossy(&self.value))
+            .finish()
     }
 }

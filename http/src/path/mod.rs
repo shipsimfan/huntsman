@@ -1,5 +1,5 @@
 use crate::HTTPTarget;
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::Debug};
 
 mod query_param;
 
@@ -35,12 +35,12 @@ fn parse_segment_until<'a, F: Fn(u8) -> bool>(
             && target[i + 1].is_ascii_hexdigit()
             && target[i + 2].is_ascii_hexdigit()
         {
-            let low = from_hexdigit(target[i + 1]);
-            let high = from_hexdigit(target[i + 2]);
+            let high = from_hexdigit(target[i + 1]);
+            let low = from_hexdigit(target[i + 2]);
 
             if segment.is_none() {
-                let mut new_segment = Vec::with_capacity(start - i);
-                new_segment.copy_from_slice(&target[start..i]);
+                let mut new_segment = Vec::with_capacity(i - start);
+                new_segment.extend_from_slice(&target[start..i]);
                 segment = Some(new_segment);
             }
 
@@ -133,5 +133,21 @@ impl<'a> HTTPPath<'a> {
         }
 
         None
+    }
+}
+
+impl<'a> Debug for HTTPPath<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("HTTPPath { segments: [")?;
+        for i in 0..self.segments.len() {
+            write!(f, "\"{}\"", String::from_utf8_lossy(&self.segments[i]))?;
+
+            if i < self.segments.len() - 1 {
+                f.write_str(", ")?;
+            }
+        }
+
+        write!(f, "], query_params: {:?}", self.query_params)?;
+        f.write_str(" }")
     }
 }

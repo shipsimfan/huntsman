@@ -24,7 +24,7 @@ fn read_file(path: Option<PathBuf>, default: &'static [u8]) -> (Cow<'static, [u8
         }
     };
 
-    (Cow::Owned(content), parse_extension(path))
+    (Cow::Owned(content), parse_extension(&path))
 }
 
 fn main() {
