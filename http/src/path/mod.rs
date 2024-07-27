@@ -23,7 +23,7 @@ fn from_hexdigit(x: u8) -> u8 {
 
 fn parse_segment_until<'a, F: Fn(u8) -> bool>(
     mut i: usize,
-    target: &'a HTTPTarget<'a>,
+    target: HTTPTarget<'a>,
     predicate: F,
 ) -> (Cow<'a, [u8]>, usize) {
     let start = i;
@@ -57,14 +57,14 @@ fn parse_segment_until<'a, F: Fn(u8) -> bool>(
 
     let segment = match segment {
         Some(segment) => segment.into(),
-        None => target[start..i].into(),
+        None => target.as_slice()[start..i].into(),
     };
     (segment, i)
 }
 
 impl<'a> HTTPPath<'a> {
     /// Parses `target` into an [`HTTPPath`]
-    pub fn parse(target: &'a HTTPTarget<'a>) -> Self {
+    pub fn parse(target: HTTPTarget<'a>) -> Self {
         if target.len() == 0 {
             return HTTPPath {
                 segments: Vec::new(),

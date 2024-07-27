@@ -7,7 +7,7 @@ use std::{
 
 /// Parses a `url` into an acceptable path under `base`
 pub fn parse(url: HTTPTarget, base: &Path) -> Option<OsString> {
-    let http_path = HTTPPath::parse(&url);
+    let http_path = HTTPPath::parse(url);
 
     let mut path = base.to_path_buf();
     for segment in http_path.segments() {

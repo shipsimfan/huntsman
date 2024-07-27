@@ -10,7 +10,7 @@ pub struct HTTPQueryParam<'a> {
 
 impl<'a> HTTPQueryParam<'a> {
     /// Parse an [`HTTPQueryParam`] from `stream`
-    pub(super) fn parse(i: usize, target: &'a HTTPTarget<'a>) -> (Self, usize) {
+    pub(super) fn parse(i: usize, target: HTTPTarget<'a>) -> (Self, usize) {
         let (key, i) = parse_segment_until(i, target, |x| x == b'=' || x == b'&');
         let (value, i) = if target[i] == b'=' {
             parse_segment_until(i + 1, target, |x| x == b'&')
