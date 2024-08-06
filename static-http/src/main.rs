@@ -81,5 +81,8 @@ fn main() {
         args.log_reponses,
     );
 
-    huntsman::run(app, args.huntsman_options, args.http_options).unwrap()
+    if let Err(error) = huntsman::run(app, args.huntsman_options, args.http_options) {
+        eprintln!("Error: {}", error);
+        std::process::exit(1);
+    }
 }
