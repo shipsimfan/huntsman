@@ -2,6 +2,7 @@ use super::Stream;
 use crate::HTTPParseError;
 
 /// A field containing metadata about an HTTP request
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct HTTPRequestField<'a> {
     /// The name of the field
     name: &'a [u8],

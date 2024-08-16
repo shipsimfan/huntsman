@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 /// The options to determine how HTTP will operate
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HTTPOptions {
     /// The maximum size for HTTP headers in requests
     pub max_header_size: usize,

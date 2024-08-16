@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use super::HTTPResponse;
 
 /// The body of an [`HTTPResponse`]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct HTTPResponseBody<'a> {
     /// The body itself
     body: Cow<'a, [u8]>,

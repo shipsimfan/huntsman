@@ -182,7 +182,7 @@ parser! {
                        "TYPE can be \"blacklist\" or \"whitelist\"",
                        "Defaults to \"blacklist\""]
                       |options: StaticHuntsmanOptions, filter_type: FilterListType| { options.log_filter_type = filter_type; }
-        ),
+        ).group("LOGGING FLAGS"),
         parsing_flag!(, "log-filter" "SCOPE" "missing SCOPE for log-filter"
                      "Add SCOPE to the log filter list"
                      |options: StaticHuntsmanOptions, scope: String| { options.log_filter.push(scope); }

@@ -5,6 +5,7 @@ use std::fmt::{Display, Formatter, Result};
 ///
 /// The [`u8`] default is just an item that implements display, it could be anything but I chose
 /// something small.
+#[derive(Clone)]
 pub struct HTTPRequestDisplay<'a, Response: Display = u8> {
     /// The request to display
     request: &'a HTTPRequest<'a>,

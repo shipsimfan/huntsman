@@ -11,7 +11,7 @@ pub use error::HTTPParseError;
 pub use header::{HTTPMethod, HTTPRequestField, HTTPRequestHeader, HTTPTarget};
 
 /// An HTTP request received from a client
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HTTPRequest<'a> {
     /// The header for the http request
     header: HTTPRequestHeader<'a>,

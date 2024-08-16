@@ -9,7 +9,7 @@ mod status;
 pub use status::HTTPStatus;
 
 /// An HTTP response to be sent to the client
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HTTPResponse<'a> {
     /// The header of the response
     header: Vec<u8>,

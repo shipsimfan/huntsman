@@ -3,6 +3,7 @@ use crate::HTTPTarget;
 use std::{borrow::Cow, fmt::Debug};
 
 /// A query parameter passed in an HTTP request
+#[derive(Clone, PartialEq, Eq)]
 pub struct HTTPQueryParam<'a> {
     key: Cow<'a, [u8]>,
     value: Cow<'a, [u8]>,

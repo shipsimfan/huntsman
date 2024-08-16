@@ -14,7 +14,7 @@ pub enum HTTPListener {
 
 impl HTTPListener {
     /// Creates a new [`Listener`] for `address`
-    pub(super) fn new(address: &HTTPListenAddress) -> Result<(Self, HTTPListenAddress)> {
+    pub(crate) fn new(address: &HTTPListenAddress) -> Result<(Self, HTTPListenAddress)> {
         match address {
             HTTPListenAddress::HTTP(address) => HTTPListener::new_http(*address),
         }

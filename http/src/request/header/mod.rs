@@ -9,7 +9,7 @@ pub use method::HTTPMethod;
 pub use target::HTTPTarget;
 
 /// The header of an HTTP request
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HTTPRequestHeader<'a> {
     /// The request method
     method: HTTPMethod,

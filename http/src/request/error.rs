@@ -1,4 +1,5 @@
 /// An error while parsing an HTTP Request
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HTTPParseError {
     /// An invalid method was provided
     InvalidMethod,
@@ -73,12 +74,6 @@ impl std::fmt::Display for HTTPParseError {
                 error
             ),
         }
-    }
-}
-
-impl std::fmt::Debug for HTTPParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self, f)
     }
 }
 

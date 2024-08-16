@@ -1,28 +1,3 @@
-// Allow characters:
-// !                            33
-// $                            36
-// %                            37
-// &                            38
-// '                            39
-// (                            40
-// )                            41
-// *                            42
-// +                            43
-// ,                            44
-// -                            45
-// .                            46
-// '/' - Must start with one    47
-// 0-9                          48 - 57
-// :                            58
-// ;                            59
-// =                            61
-// ?                            63
-// @                            64
-// A-Z                          65 - 90
-// _                            95
-// a-z                          97 - 122
-// ~                            126
-
 use super::Stream;
 use crate::HTTPParseError;
 use std::ops::Deref;

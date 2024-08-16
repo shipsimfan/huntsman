@@ -1,7 +1,7 @@
 use std::net::{SocketAddr, ToSocketAddrs};
 
 /// The addresses this server will listen on
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HTTPListenAddress {
     /// The address to listen for insecure HTTP/1.1 connections
     HTTP(SocketAddr),
@@ -24,11 +24,5 @@ impl<'a> std::fmt::Display for HTTPListenAddress {
         match self {
             HTTPListenAddress::HTTP(address) => write!(f, "{} (HTTP/1.1)", address),
         }
-    }
-}
-
-impl<'a> std::fmt::Debug for HTTPListenAddress {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self, f)
     }
 }

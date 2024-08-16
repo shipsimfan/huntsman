@@ -2,7 +2,7 @@ use super::Stream;
 use crate::HTTPParseError;
 
 /// A method for the request
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HTTPMethod {
     /// The [`HTTPMethod::GET`] method requests transfer of a current selected representation for
     /// the target resource
@@ -51,11 +51,5 @@ impl std::fmt::Display for HTTPMethod {
             HTTPMethod::PUT => "PUT",
             HTTPMethod::DELETE => "DELETE",
         })
-    }
-}
-
-impl std::fmt::Debug for HTTPMethod {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self, f)
     }
 }

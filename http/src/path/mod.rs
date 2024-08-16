@@ -6,6 +6,7 @@ mod query_param;
 pub use query_param::HTTPQueryParam;
 
 /// A parsed HTTP request path
+#[derive(Clone, PartialEq, Eq)]
 pub struct HTTPPath<'a> {
     segments: Vec<Cow<'a, [u8]>>,
     query_params: Vec<HTTPQueryParam<'a>>,

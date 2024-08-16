@@ -1,6 +1,7 @@
 use std::num::NonZeroUsize;
 
 /// The settings for the huntsman server
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options<Protocol: crate::Protocol> {
     /// The number of workers to handle connections
     workers: Option<NonZeroUsize>,
