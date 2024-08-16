@@ -34,7 +34,7 @@ fn main() {
             None => return,
         },
         Err(error) => {
-            eprintln!("Argument error: {}", error);
+            eprintln!("Error: {}", error);
             std::process::exit(1);
         }
     };
@@ -50,7 +50,7 @@ fn main() {
     {
         Ok(log_outputs) => log_outputs,
         Err(error) => {
-            eprintln!("Unable to open log output - {}", error);
+            eprintln!("Error: {}", error);
             std::process::exit(1);
         }
     };
