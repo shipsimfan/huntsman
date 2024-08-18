@@ -5,6 +5,7 @@
 #![deny(rustdoc::unescaped_backticks)]
 #![deny(rustdoc::redundant_explicit_links)]
 #![warn(rustdoc::broken_intra_doc_links)]
+#![feature(addr_parse_ascii)]
 
 use client::Stream;
 use huntsman::Protocol;
@@ -22,7 +23,7 @@ pub use client::{HTTPClient, HTTPClientAddress, HTTPProtocol};
 pub use lasync::{Error, Result};
 pub use listen_address::HTTPListenAddress;
 pub use options::HTTPOptions;
-pub use path::{HTTPPath, HTTPQueryParam};
+pub use path::{FromHTTPQueryParam, FromHTTPQueryParams, HTTPPath, HTTPQueryParam};
 pub use request::{
     HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestDisplay, HTTPRequestField,
     HTTPRequestHeader, HTTPTarget,
