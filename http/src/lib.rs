@@ -23,7 +23,7 @@ pub use client::{HTTPClient, HTTPClientAddress, HTTPProtocol};
 pub use lasync::{Error, Result};
 pub use listen_address::HTTPListenAddress;
 pub use options::HTTPOptions;
-pub use path::{FromHTTPQueryParam, FromHTTPQueryParams, HTTPPath, HTTPQueryParam};
+pub use path::{HTTPPath, HTTPQueryParam};
 pub use request::{
     HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestDisplay, HTTPRequestField,
     HTTPRequestHeader, HTTPTarget,

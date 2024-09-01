@@ -3,7 +3,7 @@ use std::{borrow::Cow, fmt::Debug, ops::Index};
 
 mod query_param;
 
-pub use query_param::{FromHTTPQueryParam, FromHTTPQueryParams, HTTPQueryParam};
+pub use query_param::HTTPQueryParam;
 
 /// A parsed HTTP request path
 #[derive(Clone, PartialEq, Eq)]
