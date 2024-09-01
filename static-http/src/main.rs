@@ -1,4 +1,6 @@
 use app::StaticHuntsman;
+use huntsman_http::ReadHTTPChunkedResponseBody;
+use lasync::fs::File;
 use oak::LogController;
 use path::parse_extension;
 use std::{borrow::Cow, path::PathBuf};
@@ -8,6 +10,8 @@ mod args;
 mod error;
 mod path;
 mod response_display;
+
+pub type HTTPResponse<'a> = huntsman_http::HTTPResponse<'a, ReadHTTPChunkedResponseBody<File>>;
 
 /// Attempts to read a file and parse it's extension
 fn read_file(path: Option<PathBuf>, default: &'static [u8]) -> (Cow<'static, [u8]>, &'static [u8]) {
@@ -78,7 +82,8 @@ fn main() {
         log_controller,
         args.log_headers,
         args.log_bodies,
-        args.log_reponses,
+        args.log_responses,
+        args.max_chunk_size,
     );
 
     if let Err(error) = huntsman::run(app, args.huntsman_options, args.http_options) {

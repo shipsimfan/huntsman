@@ -1,17 +1,17 @@
-use crate::{error::HandleError, path::parse_extension, response_display::ResponseDisplay};
+use crate::{
+    error::HandleError, path::parse_extension, response_display::ResponseDisplay, HTTPResponse,
+};
 use huntsman::{App, Protocol};
 use huntsman_http::{
-    HTTPClientAddress, HTTPListenAddress, HTTPParseError, HTTPRequestDisplay, HTTPResponse,
-    HTTPStatus, HTTPTarget, HTTP,
+    HTTPClientAddress, HTTPListenAddress, HTTPParseError, HTTPRequestDisplay, HTTPStatus,
+    HTTPTarget, ReadHTTPChunkedResponseBody, HTTP,
 };
-use lasync::{
-    fs::{File, Metadata},
-    io::Read,
-};
+use lasync::fs::{File, Metadata};
 use oak::{info, LogController, LogLevel, Logger};
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
+    num::NonZeroUsize,
     os::unix::ffi::{OsStrExt, OsStringExt},
     path::PathBuf,
     sync::Arc,
@@ -48,13 +48,17 @@ pub struct StaticHuntsman {
 
     /// Should response codes and paths be logged in the access logger?
     log_responses: bool,
+
+    /// The maximum size for chunks in response bodies
+    max_chunk_size: NonZeroUsize,
 }
 
 /// Attempts to read the file at `path`, or one of the `indexes` if the `path` is a directory.
 async fn read_file_or_index(
     path: OsString,
     indexes: &[PathBuf],
-) -> Result<(Vec<u8>, OsString), OsString> {
+    max_chunk_size: NonZeroUsize,
+) -> Result<(ReadHTTPChunkedResponseBody<File>, OsString), OsString> {
     let file = match File::open(&path).await {
         Ok(file) => file,
         Err(_) => return Err(path),
@@ -66,20 +70,21 @@ async fn read_file_or_index(
     };
 
     if metadata.is_file() {
-        return match read_file(file, Some(metadata)).await {
+        return match read_file(file, Some(metadata), max_chunk_size).await {
             Some(content) => Ok((content, path)),
             None => Err(path),
         };
     }
 
-    read_indexes(path, indexes).await
+    read_indexes(path, indexes, max_chunk_size).await
 }
 
 /// Attempts the read one of the `indexes` in `base_path`
 async fn read_indexes(
     path: OsString,
     indexes: &[PathBuf],
-) -> Result<(Vec<u8>, OsString), OsString> {
+    max_chunk_size: NonZeroUsize,
+) -> Result<(ReadHTTPChunkedResponseBody<File>, OsString), OsString> {
     let mut path = path.into_vec();
     path.push(b'/');
     let base_path_length = path.len();
@@ -94,7 +99,7 @@ async fn read_indexes(
         };
 
         let path = OsString::from_vec(path);
-        return match read_file(file, None).await {
+        return match read_file(file, None, max_chunk_size).await {
             Some(content) => Ok((content, path)),
             None => Err(path),
         };
@@ -105,7 +110,11 @@ async fn read_indexes(
 }
 
 /// Attempts to read the file at `path`
-async fn read_file(mut file: File, metadata: Option<Metadata>) -> Option<Vec<u8>> {
+async fn read_file(
+    file: File,
+    metadata: Option<Metadata>,
+    max_chunk_size: NonZeroUsize,
+) -> Option<ReadHTTPChunkedResponseBody<File>> {
     let metadata = match metadata {
         Some(metadata) => metadata,
         None => file.metadata().await.ok()?,
@@ -115,11 +124,7 @@ async fn read_file(mut file: File, metadata: Option<Metadata>) -> Option<Vec<u8>
         return None;
     }
 
-    let mut buffer = Vec::with_capacity(metadata.len() as _);
-    unsafe { buffer.set_len(metadata.len() as _) };
-    file.read_exact(&mut buffer).await.ok()?;
-
-    Some(buffer)
+    Some(ReadHTTPChunkedResponseBody::new(file, max_chunk_size))
 }
 
 impl StaticHuntsman {
@@ -133,6 +138,7 @@ impl StaticHuntsman {
         log_headers: bool,
         log_bodies: bool,
         log_responses: bool,
+        max_chunk_size: NonZeroUsize,
     ) -> Self {
         let connections_logger = log_controller.create_logger("connections");
         let access_logger = log_controller.create_logger("access");
@@ -149,6 +155,7 @@ impl StaticHuntsman {
             log_headers,
             log_bodies,
             log_responses,
+            max_chunk_size,
         }
     }
 
@@ -168,8 +175,8 @@ impl StaticHuntsman {
     async fn read_file<'a>(
         &'a self,
         path: OsString,
-    ) -> Result<(Vec<u8>, OsString), (HTTPResponse<'a>, OsString)> {
-        read_file_or_index(path, &self.indexes)
+    ) -> Result<(ReadHTTPChunkedResponseBody<File>, OsString), (HTTPResponse<'a>, OsString)> {
+        read_file_or_index(path, &self.indexes, self.max_chunk_size)
             .await
             .map_err(|path| {
                 (
@@ -206,7 +213,7 @@ impl StaticHuntsman {
 }
 
 impl App for StaticHuntsman {
-    type Protocol = HTTP;
+    type Protocol = HTTP<ReadHTTPChunkedResponseBody<File>>;
 
     type Client = HTTPClientAddress;
 

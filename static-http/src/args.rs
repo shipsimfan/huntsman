@@ -1,5 +1,6 @@
 use argparse::{config_flag, help_flag, parser, parsing_flag, simple_flag, version_flag};
-use huntsman_http::{HTTPListenAddress, HTTPOptions, HTTP};
+use huntsman_http::{HTTPListenAddress, HTTPOptions, ReadHTTPChunkedResponseBody, HTTP};
+use lasync::fs::File;
 use oak::{FilterListType, LogLevel, StdLogOutput};
 use std::{net::SocketAddr, num::NonZeroUsize, path::PathBuf, time::Duration};
 
@@ -20,11 +21,14 @@ pub struct StaticHuntsmanOptions {
 
     /* Huntsman Flags */
     /// The huntsman options
-    pub huntsman_options: huntsman::Options<HTTP>,
+    pub huntsman_options: huntsman::Options<HTTP<ReadHTTPChunkedResponseBody<File>>>,
 
     /* HTTP Flags */
     /// The HTTP options
     pub http_options: HTTPOptions,
+
+    /// The maximum size of chunks to send in responses
+    pub max_chunk_size: NonZeroUsize,
 
     /* Logging Flags */
     /// Should request headers be logged?
@@ -34,7 +38,7 @@ pub struct StaticHuntsmanOptions {
     pub log_bodies: bool,
 
     /// Should response codes and paths be logged?
-    pub log_reponses: bool,
+    pub log_responses: bool,
 
     /// The minimum severity to log
     pub min_log_level: LogLevel,
@@ -151,6 +155,11 @@ parser! {
                           options.http_options.write_timeout = timeout;
                       }
         ).group("HTTP FLAGS"),
+        parsing_flag!(, "max-chunk-size" "SIZE" "missing SIZE for max-chunk-size"
+                      ["Specify the maximum size chunks when sending response bodies",
+                       "Defaults to 32,768 bytes (32 Kb)"]
+                      |options: StaticHuntsmanOptions, size: NonZeroUsize| { options.max_chunk_size = size; }
+        ).group("HTTP FLAGS"),
 
         // Logging Flags
         simple_flag!(, "log-headers"
@@ -163,7 +172,7 @@ parser! {
         ).group("LOGGING FLAGS"),
         simple_flag!(, "log-responses"
                      "Enable logging responses statuses and paths"
-                     |options: StaticHuntsmanOptions, _| { options.log_reponses = true; }
+                     |options: StaticHuntsmanOptions, _| { options.log_responses = true; }
         ).group("LOGGING FLAGS"),
         parsing_flag!(, "min-log-level" "LEVEL" "missing LEVEL for min-log-level"
                       ["Sets the minimum severity of messages to log",
@@ -216,9 +225,10 @@ impl Default for StaticHuntsmanOptions {
             not_found: None,
             huntsman_options: huntsman::Options::default(),
             http_options: HTTPOptions::default(),
+            max_chunk_size: NonZeroUsize::new(32768).unwrap(),
             log_headers: false,
             log_bodies: false,
-            log_reponses: false,
+            log_responses: false,
             min_log_level: LogLevel::Info,
             max_log_level: None,
             log_filter_type: FilterListType::Blacklist,

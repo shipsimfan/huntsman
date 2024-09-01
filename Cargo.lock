@@ -13,12 +13,12 @@ dependencies = [
 [[package]]
 name = "base"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-proc-macro-util#466265c30de3e57aa0365bac5e4de4e54bee56c3"
+source = "git+https://github.com/shipsimfan/lib-proc-macro-util#96d17ea81a30756951f75f3a591132e870a90707"
 
 [[package]]
 name = "executor"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#795855098861ee89081fbf7903f7389c6bde913e"
+source = "git+https://github.com/shipsimfan/lib-lasync#3707fd54d92e1154c722168f921d6c93ca74d5d0"
 dependencies = [
  "executor-common",
  "executor-linux",
@@ -27,12 +27,12 @@ dependencies = [
 [[package]]
 name = "executor-common"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#795855098861ee89081fbf7903f7389c6bde913e"
+source = "git+https://github.com/shipsimfan/lib-lasync#3707fd54d92e1154c722168f921d6c93ca74d5d0"
 
 [[package]]
 name = "executor-linux"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#795855098861ee89081fbf7903f7389c6bde913e"
+source = "git+https://github.com/shipsimfan/lib-lasync#3707fd54d92e1154c722168f921d6c93ca74d5d0"
 dependencies = [
  "executor-common",
  "uring",
@@ -41,7 +41,7 @@ dependencies = [
 [[package]]
 name = "futures"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#795855098861ee89081fbf7903f7389c6bde913e"
+source = "git+https://github.com/shipsimfan/lib-lasync#3707fd54d92e1154c722168f921d6c93ca74d5d0"
 dependencies = [
  "futures-common",
  "futures-linux",
@@ -50,12 +50,12 @@ dependencies = [
 [[package]]
 name = "futures-common"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#795855098861ee89081fbf7903f7389c6bde913e"
+source = "git+https://github.com/shipsimfan/lib-lasync#3707fd54d92e1154c722168f921d6c93ca74d5d0"
 
 [[package]]
 name = "futures-linux"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#795855098861ee89081fbf7903f7389c6bde913e"
+source = "git+https://github.com/shipsimfan/lib-lasync#3707fd54d92e1154c722168f921d6c93ca74d5d0"
 dependencies = [
  "executor",
  "futures-common",
@@ -90,7 +90,7 @@ dependencies = [
 [[package]]
 name = "lasync"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-lasync#795855098861ee89081fbf7903f7389c6bde913e"
+source = "git+https://github.com/shipsimfan/lib-lasync#3707fd54d92e1154c722168f921d6c93ca74d5d0"
 dependencies = [
  "executor",
  "futures",
@@ -104,7 +104,7 @@ source = "git+https://github.com/shipsimfan/lib-linux#dd77885b4300058bbf465d8d5c
 [[package]]
 name = "macros"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-proc-macro-util#466265c30de3e57aa0365bac5e4de4e54bee56c3"
+source = "git+https://github.com/shipsimfan/lib-proc-macro-util#96d17ea81a30756951f75f3a591132e870a90707"
 dependencies = [
  "base",
 ]
@@ -128,7 +128,7 @@ dependencies = [
 [[package]]
 name = "proc-macro-util"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-proc-macro-util#466265c30de3e57aa0365bac5e4de4e54bee56c3"
+source = "git+https://github.com/shipsimfan/lib-proc-macro-util#96d17ea81a30756951f75f3a591132e870a90707"
 dependencies = [
  "base",
  "macros 0.1.0",

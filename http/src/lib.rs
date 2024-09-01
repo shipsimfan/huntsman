@@ -28,32 +28,36 @@ pub use request::{
     HTTPMethod, HTTPParseError, HTTPRequest, HTTPRequestDisplay, HTTPRequestField,
     HTTPRequestHeader, HTTPTarget,
 };
-pub use response::{HTTPResponse, HTTPStatus};
+pub use response::{
+    EmptyHTTPChunkedResponseBody, HTTPChunkedResponseBody, HTTPResponse, HTTPResponseBodyContent,
+    HTTPStatus, ReadHTTPChunkedResponseBody,
+};
 
 /// The HTTP protocol
-pub struct HTTP {
+pub struct HTTP<B: HTTPChunkedResponseBody = EmptyHTTPChunkedResponseBody> {
     /// The sockets for accepting clients
-    listeners: Vec<HTTPListener>,
+    listeners: Vec<HTTPListener<B>>,
 
     /// The addresses the server is listening on
     listen_addresses: Vec<HTTPListenAddress>,
 
+    /// The options to define how this server should run
     options: HTTPOptions,
 }
 
-impl Protocol for HTTP {
+impl<B: HTTPChunkedResponseBody> Protocol for HTTP<B> {
     type Options = HTTPOptions;
 
     type ClientAddress = HTTPClientAddress;
     type Request<'a> = HTTPRequest<'a>;
-    type Response<'a> = HTTPResponse<'a>;
+    type Response<'a> = HTTPResponse<'a, B>;
     type ReadError = HTTPParseError;
     type SendError = lasync::Error;
-    type Client = HTTPClient;
+    type Client = HTTPClient<B>;
 
     type ListenAddress = HTTPListenAddress;
     type ListenError = lasync::Error;
-    type Listener = HTTPListener;
+    type Listener = HTTPListener<B>;
 
     async fn start(addresses: &[Self::ListenAddress], options: Self::Options) -> Result<Self> {
         let mut listeners = Vec::with_capacity(addresses.len());
@@ -83,3 +87,6 @@ impl Protocol for HTTP {
         &self.options
     }
 }
+
+unsafe impl<B: HTTPChunkedResponseBody> Send for HTTP<B> {}
+unsafe impl<B: HTTPChunkedResponseBody> Sync for HTTP<B> {}

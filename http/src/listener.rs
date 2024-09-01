@@ -1,18 +1,18 @@
 use crate::{
-    client::HTTPSocket, HTTPClient, HTTPClientAddress, HTTPListenAddress, HTTPOptions,
-    HTTPProtocol, Result,
+    client::HTTPSocket, HTTPChunkedResponseBody, HTTPClient, HTTPClientAddress, HTTPListenAddress,
+    HTTPOptions, HTTPProtocol, Result,
 };
 use huntsman::ProtocolListener;
 use lasync::net::TCPListener;
-use std::net::SocketAddr;
+use std::{marker::PhantomData, net::SocketAddr};
 
 /// The sockets to listen for connections on
-pub enum HTTPListener {
+pub enum HTTPListener<B: HTTPChunkedResponseBody> {
     /// The listener for insecure HTTP/1.1 connections
-    HTTP(TCPListener),
+    HTTP(TCPListener, PhantomData<B>),
 }
 
-impl HTTPListener {
+impl<B: HTTPChunkedResponseBody> HTTPListener<B> {
     /// Creates a new [`Listener`] for `address`
     pub(crate) fn new(address: &HTTPListenAddress) -> Result<(Self, HTTPListenAddress)> {
         match address {
@@ -25,15 +25,15 @@ impl HTTPListener {
         let socket = TCPListener::bind(address)?;
         let listen_address = socket.local_addr().unwrap();
         Ok((
-            HTTPListener::HTTP(socket),
+            HTTPListener::HTTP(socket, PhantomData),
             HTTPListenAddress::HTTP(listen_address),
         ))
     }
 }
 
-impl ProtocolListener for HTTPListener {
+impl<B: HTTPChunkedResponseBody> ProtocolListener for HTTPListener<B> {
     type Address = HTTPListenAddress;
-    type Client = HTTPClient;
+    type Client = HTTPClient<B>;
     type ClientAddress = HTTPClientAddress;
     type Error = lasync::Error;
     type Options = HTTPOptions;
@@ -43,7 +43,7 @@ impl ProtocolListener for HTTPListener {
         options: &Self::Options,
     ) -> std::result::Result<(Self::Client, Self::ClientAddress), Self::Error> {
         let (socket, client_address) = match self {
-            HTTPListener::HTTP(listener) => {
+            HTTPListener::HTTP(listener, _) => {
                 let (mut socket, socket_address) = listener.accept().await?;
                 socket.set_nodelay(true)?;
                 (

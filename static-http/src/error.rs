@@ -1,6 +1,6 @@
+use crate::HTTPResponse;
+use huntsman_http::HTTPClientAddress;
 use std::{ffi::OsString, fmt::Debug};
-
-use huntsman_http::{HTTPClientAddress, HTTPResponse};
 
 /// The kind of error that occurred
 #[derive(Debug)]
@@ -13,7 +13,6 @@ enum HandleErrorKind {
 }
 
 /// An error that can occur during the handling of a client
-#[derive(Debug)]
 pub struct HandleError<'a> {
     /// The response to give to the client
     response: HTTPResponse<'a>,
@@ -71,5 +70,11 @@ impl<'a> std::fmt::Display for HandleError<'a> {
                 path, self.client
             ),
         }
+    }
+}
+
+impl<'a> std::fmt::Debug for HandleError<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, f)
     }
 }

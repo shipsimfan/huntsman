@@ -2,12 +2,6 @@ use super::parse_segment_until;
 use crate::HTTPTarget;
 use std::{borrow::Cow, fmt::Debug};
 
-mod from;
-mod from_many;
-
-pub use from::FromHTTPQueryParam;
-pub use from_many::FromHTTPQueryParams;
-
 /// A query parameter passed in an HTTP request
 #[derive(Clone, PartialEq, Eq)]
 pub struct HTTPQueryParam<'a> {
