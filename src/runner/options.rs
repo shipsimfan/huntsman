@@ -1,7 +1,7 @@
 use std::num::NonZeroUsize;
 
 /// The settings for the huntsman server
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Options<Protocol: crate::Protocol> {
     /// The number of workers to handle connections
     workers: Option<NonZeroUsize>,
@@ -58,6 +58,20 @@ impl<Protocol: crate::Protocol> Default for Options<Protocol> {
             workers: None,
             connections_per_worker: NonZeroUsize::new(64).unwrap(),
             addresses: Vec::new(),
+        }
+    }
+}
+
+impl<
+        ListenAddress: crate::ProtocolListener + Clone,
+        Protocol: crate::Protocol<ListenAddress = ListenAddress>,
+    > Clone for Options<Protocol>
+{
+    fn clone(&self) -> Self {
+        Options {
+            workers: self.workers.clone(),
+            connections_per_worker: self.connections_per_worker.clone(),
+            addresses: self.addresses.clone(),
         }
     }
 }
