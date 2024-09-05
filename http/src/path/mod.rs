@@ -83,7 +83,10 @@ impl<'a> HTTPPath<'a> {
 
             let (segment, new_i) = parse_segment_until(i, target, |x| x == b'/' || x == b'?');
             i = new_i;
-            segments.push(segment);
+
+            if segment.len() > 0 {
+                segments.push(segment);
+            }
 
             leading_slash = true;
         }
