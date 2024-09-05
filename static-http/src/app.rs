@@ -7,7 +7,7 @@ use huntsman_http::{
     HTTPTarget, ReadHTTPChunkedResponseBody, HTTP,
 };
 use lasync::fs::{File, Metadata};
-use oak::{info, LogController, LogLevel, Logger};
+use oak::{error, info, LogController, LogLevel, Logger};
 use std::{
     borrow::Cow,
     ffi::{OsStr, OsString},
@@ -267,22 +267,18 @@ impl App for StaticHuntsman {
         self: &Arc<Self>,
         source: HTTPClientAddress,
     ) -> Option<HTTPClientAddress> {
-        self.connections_logger.log(
-            LogLevel::Info,
-            &format_args!("Client connected from {}", source),
-        );
+        info!(self.connections_logger, "Client connected from {}", source);
         Some(source)
     }
 
     async fn on_client_disconnect(self: &Arc<Self>, client: &mut HTTPClientAddress) {
-        self.connections_logger
-            .log(LogLevel::Info, &format_args!("{} disconnected", client));
+        info!(self.connections_logger, "{} disconnected", client);
     }
 
     async fn accept_error(self: &Arc<Self>, error: huntsman_http::Error) {
-        self.error_logger.log(
-            LogLevel::Error,
-            &format_args!("An error occurred while accepting a client - {}", error),
+        error!(
+            self.error_logger,
+            "An error occurred while accepting a client - {}", error
         );
     }
 
@@ -291,12 +287,9 @@ impl App for StaticHuntsman {
         client: &'a mut Self::Client,
         error: HTTPParseError,
     ) -> Option<HTTPResponse<'a>> {
-        self.error_logger.log(
-            LogLevel::Error,
-            &format_args!(
-                "An error occurred while parsing a request from {} - {}",
-                client, error
-            ),
+        error!(
+            self.error_logger,
+            "An error occurred while parsing a request from {} - {}", client, error
         );
 
         Some(match error {
@@ -311,12 +304,9 @@ impl App for StaticHuntsman {
     }
 
     async fn send_error(self: &Arc<Self>, client: &mut Self::Client, error: huntsman_http::Error) {
-        self.error_logger.log(
-            LogLevel::Error,
-            &format_args!(
-                "An error occurred while sending a response to {} - {}",
-                client, error
-            ),
+        error!(
+            self.error_logger,
+            "An error occurred while sending a response to {} - {}", client, error
         );
     }
 }
