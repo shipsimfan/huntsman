@@ -243,15 +243,15 @@ impl App for StaticHuntsman {
             None
         };
 
-        self.access_logger.log(
-            LogLevel::Info,
+        info!(
+            self.access_logger,
             &HTTPRequestDisplay::new(
                 &request,
                 *client,
                 response_display,
                 self.log_headers,
                 self.log_bodies,
-            ),
+            )
         );
 
         match result {
